@@ -132,6 +132,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg2);color:var(--text1);f
 .t-amber{background:var(--amber-dim);color:var(--amber)}
 .t-orange{background:var(--orange-dim);color:var(--orange)}
 .t-gray{background:var(--bg4);color:var(--text2)}
+.t-green2{background:#d1fae5;color:#065f46}
+.t-purple{background:#ede9fe;color:#5b21b6}
+.t-purple2{background:#f3e8ff;color:#7c3aed}
 .t-teal{background:var(--teal-dim);color:var(--teal)}
 /* Grid layouts */
 .two-col{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px}
@@ -561,38 +564,47 @@ th{color:var(--text2)!important;font-weight:700}
 
 /* ── PAINEL MOBILE ── */
 @media(max-width:768px){
-  /* Force single column for all grid layouts */
+  /* Forçar coluna única em todos os grids */
   .two-col,.three-col,.four-col{grid-template-columns:1fr!important;gap:8px!important}
-  /* View padding */
   .view-content{padding:10px 8px!important}
-  /* Painel panels */
   .panel{margin-bottom:0}
-  .panel-body{max-height:240px;overflow-y:auto;-webkit-overflow-scrolling:touch}
-  #panel-procs .panel-body{max-height:200px}
-  #panel-prazos .panel-body{max-height:180px}
+
+  /* Todos os painéis: altura uniforme */
+  .panel-body{max-height:160px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+  /* Processos Recentes e Próximos Prazos: mesma altura dos outros painéis */
+  #panel-procs .panel-body{max-height:160px!important;overflow-y:auto}
+  #panel-prazos .panel-body{max-height:160px!important;overflow-y:auto}
   #panel-fin .panel-body{max-height:160px}
   #panel-agenda .panel-body{max-height:160px}
   #panel-pend .panel-body{max-height:160px}
-  /* Proc items in painel */
-  .proc-item{padding:7px 8px;gap:7px;flex-wrap:nowrap}
-  .proc-num{font-size:9px!important;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px}
+
+  /* Proc items compactos no painel */
+  .proc-item{padding:6px 8px;gap:6px;flex-wrap:nowrap;align-items:flex-start}
+  .proc-num{font-size:9px!important;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:1px;display:block}
   .proc-name{font-size:11px!important;line-height:1.3}
-  /* Prazo items */
-  .prazo-item{padding:7px 6px;gap:6px}
-  .prazo-day{font-size:16px!important}
+  .proc-info{min-width:0;flex:1}
+
+  /* Prazo items compactos */
+  .prazo-item{padding:6px 6px;gap:6px}
+  .prazo-date{min-width:32px}
+  .prazo-day{font-size:15px!important;line-height:1}
   .prazo-month{font-size:9px!important}
-  .prazo-name{font-size:12px!important}
+  .prazo-name{font-size:11px!important}
   .prazo-proc{font-size:10px!important}
-  /* Metric cards: 2x2 grid */
+
+  /* Métricas 2x2 */
   .metrics{grid-template-columns:1fr 1fr!important;gap:7px!important}
-  .metric-card{padding:12px 10px!important}
-  .metric-value{font-size:18px!important}
+  .metric-card{padding:10px 8px!important}
+  .metric-value{font-size:17px!important}
   .metric-label{font-size:10px!important}
   .metric-sub{font-size:9px!important}
-  /* Tags */
+
+  /* Tags menores */
   .tag{font-size:9px!important;padding:2px 5px!important}
-  /* Panel header */
-  .panel-header{padding:10px 12px!important}
+
+  /* Cabeçalho do painel menor */
+  .panel-header{padding:8px 12px!important}
   .panel-header-title{font-size:11px!important}
 }
 /* ── SHAKE ── */
@@ -737,11 +749,12 @@ th{color:var(--text2)!important;font-weight:700}
       <div class="page-header">
         <input class="search-box" id="search-proc" placeholder="Buscar processo, cliente, número..." oninput="renderProcessos()">
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;white-space:nowrap"><input type="checkbox" id="proc-mostrar-arquivados" onchange="renderProcessos()"> Mostrar arquivados</label>
+        <input type="checkbox" id="proc-ordem-inv" style="display:none">
         <select class="form-input" id="filtro-fase" onchange="renderProcessos()" style="max-width:160px;background:var(--bg3);box-shadow:var(--shadow)"><option value="">Todas as fases</option><option value="Inicial">Inicial</option><option value="Instrução">Instrução</option><option value="Audiência">Audiência</option><option value="Sentença">Sentença</option><option value="Recursal">Recursal</option><option value="Execução">Execução</option><option value="Arquivado">Arquivado</option></select>
         <button class="btn btn-main" onclick="openModal('modal-proc')">+ Novo Processo</button>
       </div>
       <div class="table-wrap"><table>
-        <thead><tr><th>Número</th><th>Cliente / Parte</th><th>Ingresso</th><th>Sistema</th><th>Vara / Tribunal</th><th>Status</th><th class="col-indicacao">Indicação</th><th>Movim.</th><th>Ações</th></tr></thead>
+        <thead><tr><th>Número</th><th>Cliente / Parte</th><th style="cursor:pointer;user-select:none;white-space:nowrap" onclick="toggleOrdemProcessos()" title="Clique para inverter a ordem"><span id="th-ingresso-label">Ingresso</span> <span id="th-ingresso-seta">↓</span></th><th>Sistema</th><th>Vara / Tribunal</th><th>Status</th><th class="col-indicacao">Indicação</th><th>Movim.</th><th>Ações</th></tr></thead>
         <tbody id="proc-tbody"></tbody>
       </table></div>
     </div>
@@ -1861,7 +1874,18 @@ function renderProcessos(){
   const q=(document.getElementById('search-proc')||{}).value||'';
   const clientes=load('clientes'), movs=load('movimentacoes'), parceiros=load('parceiros');
   const filtroFase=(document.getElementById('filtro-fase')||{}).value||'';
-  let list=load('processos').filter(p=>{ if(filtroFase&&p.status!==filtroFase)return false; return !q||JSON.stringify(p).toLowerCase().includes(q.toLowerCase()); });
+  const mostrarArq=document.getElementById('proc-mostrar-arquivados')?.checked||false;
+  const ordemInv=document.getElementById('proc-ordem-inv')?.checked||false;
+  let list=load('processos').filter(p=>{
+    if(!mostrarArq&&p.status==='Arquivado') return false;
+    if(filtroFase&&p.status!==filtroFase) return false;
+    return !q||JSON.stringify(p).toLowerCase().includes(q.toLowerCase());
+  });
+  // Ordenar por data de ingresso (padrão: mais recente primeiro)
+  list.sort((a,b)=>{
+    const da=a.ingresso||a.criado||'', db=b.ingresso||b.criado||'';
+    return ordemInv ? da.localeCompare(db) : db.localeCompare(da);
+  });
   const tb=document.getElementById('proc-tbody'); if(!tb) return;
   if(!list.length){ tb.innerHTML=`<tr><td colspan="8"><div class="empty"><div class="empty-icon">📁</div>Nenhum processo cadastrado.</div></td></tr>`; return }
   tb.innerHTML=list.map(p=>{
@@ -2059,7 +2083,12 @@ function salvarReceita(){
   const id=v('rec-id');
   const obj={id:id||uid(),tipo:'receita',desc:v('rec-desc'),valor:parseFloat(v('rec-valor'))||0,data:v('rec-data'),cat:v('rec-cat'),status:v('rec-status'),procId:v('rec-proc-id')||undefined};
   let list=load('financeiro'); if(id){ list=list.map(x=>x.id===id?obj:x) } else { list.unshift(obj) }
-  save('financeiro',list); clr('rec-id','rec-desc','rec-valor','rec-data'); closeModal('modal-rec'); toast(id?'Receita atualizada ✓':'Receita salva ✓'); setTimeout(()=>{ if(!window._renderAllRunning){try{renderFinanceiro();renderPainel();}catch(e){}} },500);
+  save('financeiro',list);
+  clr('rec-id','rec-desc','rec-valor','rec-data');
+  closeModal('modal-rec');
+  toast(id?'Receita atualizada ✓':'Receita salva ✓');
+  // Render imediato — não espera Firestore
+  try{ renderFinanceiro(); renderPainel(); }catch(e){}
 }
 function salvarDespesa(){
   const id=v('desp-id');
@@ -2083,7 +2112,10 @@ function salvarDespesa(){
       }
     }
   }
-  save('financeiro',list); clr('desp-id','desp-desc','desp-valor','desp-data'); setV('desp-recorrencia',''); closeModal('modal-desp'); toast(id?'Despesa atualizada ✓':'Despesa salva ✓'); setTimeout(()=>{ if(!window._renderAllRunning){try{renderFinanceiro();renderPainel();}catch(e){}} },500);
+  save('financeiro',list); clr('desp-id','desp-desc','desp-valor','desp-data'); setV('desp-recorrencia',''); closeModal('modal-desp');
+  toast(id?'Despesa atualizada ✓':'Despesa salva ✓');
+  // Render imediato — não espera Firestore
+  try{ renderFinanceiro(); renderPainel(); }catch(e){}
 }
 function excluirFin(id){ if(!confirm('Excluir lançamento?')) return; save('financeiro',load('financeiro').filter(x=>x.id!==id)); renderAll(); toast('Excluído.') }
 function editarFin(id){
@@ -2569,8 +2601,14 @@ function renderPainel(){
   }
   // Pendências
   const ppd=document.getElementById('painel-pend'); if(ppd){
-    if(!pendOpen.length) ppd.innerHTML=`<div class="empty" style="padding:16px 0"><div class="empty-icon">✔</div>Tudo em dia!</div>`;
-    else ppd.innerHTML=pendOpen.slice(0,6).map(p=>{
+    // Filtrar pendências por responsável para não-sócios
+    const uid_pend=usuarioLogadoId();
+    const isParc_pend=_usuarioLogado&&!isSocio();
+    const pendVisiveis=isParc_pend
+      ? pendOpen.filter(p=>!p.resp||p.resp===uid_pend)
+      : pendOpen;
+    if(!pendVisiveis.length) ppd.innerHTML=`<div class="empty" style="padding:16px 0"><div class="empty-icon">✔</div>Tudo em dia!</div>`;
+    else ppd.innerHTML=pendVisiveis.slice(0,6).map(p=>{
       let dataBadge='';
       if(p.data){ const d=diasRest(p.data); const venc=d<0; const cor=venc||d<=1?'var(--red)':d<=3?'var(--amber)':'var(--text3)'; const bg=venc||d<=1?'var(--red-dim)':d<=3?'var(--amber-dim)':'var(--bg4)'; dataBadge=`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:${bg};color:${cor};margin-left:4px">${venc?'Vencida':d===0?'Hoje':d===1?'Amanhã':d+' dias'}</span>`; }
       return `<div class="pend-item"><button class="pend-check" onclick="togglePend('${p.id}')"></button><div class="pend-text">${p.desc||'—'}${dataBadge}</div><span class="tag ${priTagCls(p.pri)}">${{urgente:'urgente',medio:'médio',normal:'normal',baixo:'baixo'}[p.pri]||p.pri}</span></div>`;
@@ -4416,6 +4454,14 @@ function abrirNovoCompromisso(){
   popularProcSelectGeneric('agenda-proc');
   popularProcSelectGeneric('pend-proc');
   openModal('modal-agenda');
+}
+function toggleOrdemProcessos(){
+  const inv = document.getElementById('proc-ordem-inv');
+  if(inv){ inv.checked = !inv.checked; }
+  // Update arrow indicator
+  const seta = document.getElementById('th-ingresso-seta');
+  if(seta) seta.textContent = inv?.checked ? '↑' : '↓';
+  renderProcessos();
 }
 window.addEventListener('DOMContentLoaded',()=>{
   // ── DADOS LIMPOS: remover todos os dados do localStorage (arquivo limpo) ──
