@@ -559,6 +559,19 @@ th{color:var(--text2)!important;font-weight:700}
 .sync-dot.syncing{background:var(--blue);animation:pulse .8s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
+/* ── PAINEL MOBILE ── */
+@media(max-width:768px){
+  .two-col,.three-col,.four-col{grid-template-columns:1fr!important;gap:10px!important}
+  .panel-body{max-height:260px;overflow-y:auto}
+  #panel-procs .panel-body,#panel-prazos .panel-body{max-height:220px}
+  .proc-item{padding:8px 10px;gap:8px}
+  .proc-num{font-size:10px!important;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .proc-name{font-size:12px!important}
+  .prazo-item{padding:8px 6px}
+  .prazo-day{font-size:18px!important}
+  .metrics{grid-template-columns:1fr 1fr!important;gap:8px!important}
+  .metric-value{font-size:20px!important}
+}
 /* ── SHAKE ── */
 @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
 </style>
@@ -704,7 +717,7 @@ th{color:var(--text2)!important;font-weight:700}
         <button class="btn btn-main" onclick="openModal('modal-proc')">+ Novo Processo</button>
       </div>
       <div class="table-wrap"><table>
-        <thead><tr><th>Número</th><th>Cliente / Parte</th><th>Ingresso</th><th>Área</th><th>Vara / Tribunal</th><th>Status</th><th>Resp.</th><th class="col-indicacao">Indicação</th><th>Movim.</th><th>Ações</th></tr></thead>
+        <thead><tr><th>Número</th><th>Cliente / Parte</th><th>Ingresso</th><th>Sistema</th><th>Vara / Tribunal</th><th>Status</th><th class="col-indicacao">Indicação</th><th>Movim.</th><th>Ações</th></tr></thead>
         <tbody id="proc-tbody"></tbody>
       </table></div>
     </div>
@@ -713,10 +726,11 @@ th{color:var(--text2)!important;font-weight:700}
     <div class="view" id="view-prazos">
       <div class="page-header">
         <input class="search-box" id="search-prazo" placeholder="Buscar prazo..." oninput="renderPrazos()">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;white-space:nowrap"><input type="checkbox" id="prazo-mostrar-concluidos" onchange="renderPrazos()"> Mostrar concluídos</label>
         <button class="btn btn-main" onclick="openModal('modal-prazo')">+ Novo Prazo</button>
       </div>
       <div class="table-wrap"><table>
-        <thead><tr><th>Data</th><th>Descrição</th><th>Processo</th><th>Urgência</th><th>Resp.</th><th>Ações</th></tr></thead>
+        <thead><tr><th>Data</th><th>Descrição</th><th>Processo</th><th>Urgência</th><th>Resp.</th><th>✓</th><th>Ações</th></tr></thead>
         <tbody id="prazo-tbody"></tbody>
       </table></div>
     </div>
@@ -880,6 +894,7 @@ th{color:var(--text2)!important;font-weight:700}
     <div class="view" id="view-pendencias">
       <div class="page-header">
         <input class="search-box" id="search-pend" placeholder="Buscar pendência..." oninput="renderPendencias()">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;white-space:nowrap"><input type="checkbox" id="pend-mostrar-concluidas" onchange="renderPendencias()"> Mostrar concluídas</label>
         <button class="btn btn-main" onclick="openModal('modal-pend')">+ Nova Pendência</button>
       </div>
       <div class="panel"><div class="panel-body" id="pend-lista" style="padding:4px 16px"></div></div>
@@ -1098,6 +1113,9 @@ th{color:var(--text2)!important;font-weight:700}
     <div class="form-row">
       <div class="form-group"><label class="form-label">Número do Processo</label><input class="form-input" id="proc-numero" placeholder="0000000-00.0000.0.00.0000"></div>
       <div class="form-group"><label class="form-label">Data de Ingresso</label><input class="form-input" type="date" id="proc-ingresso"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Sistema Processual</label>
+      <select class="form-input" id="proc-sistema"><option value="">— Selecione —</option><option value="PJe">PJe</option><option value="e-Proc">e-Proc</option><option value="e-SAJ">e-SAJ</option><option value="PROJUDI">PROJUDI</option><option value="SAPJUS">SAPJUS</option><option value="Outro">Outro</option></select>
     </div>
     <div class="form-group"><label class="form-label">Cliente Vinculado</label><select class="form-input" id="proc-cli-id"><option value="">— Selecione (opcional) —</option></select></div>
     <div class="form-group"><label class="form-label">Parte / Descrição Adicional</label><input class="form-input" id="proc-parte" placeholder="Ex: vs Banco Delta, Espólio de..."></div>
@@ -1708,6 +1726,7 @@ function openModal(id){
 }
 function closeModal(id){
   document.getElementById(id).classList.remove('open');
+  window._modalClosing=true; setTimeout(()=>{window._modalClosing=false;},400);
   // Bloquear re-renders durante animação de fechamento do modal
   window._modalClosing = true;
   setTimeout(()=>{ window._modalClosing = false; }, 350);
@@ -1786,11 +1805,11 @@ function salvarProcesso(){
     valorFixo:parseFloat(v('proc-ind-fixo'))||null,
     status:v('proc-ind-status')||'pendente'
   };
-  const obj={id:id||uid(),numero:v('proc-numero'),area:'',clienteId:v('proc-cli-id'),parte:v('proc-parte'),vara:v('proc-vara'),status:v('proc-status'),obs:v('proc-obs'),ingresso:v('proc-ingresso')||null,indicacao:isSocio()?(ind.parceiroId?ind:null):null,criado:todayISO(),criadoPor:usuarioLogadoId()};
+  const obj={id:id||uid(),numero:v('proc-numero'),area:'',sistema:v('proc-sistema')||'',clienteId:v('proc-cli-id'),parte:v('proc-parte'),vara:v('proc-vara'),status:v('proc-status'),obs:v('proc-obs'),ingresso:v('proc-ingresso')||null,indicacao:isSocio()?(ind.parceiroId?ind:null):null,criado:todayISO(),criadoPor:usuarioLogadoId()};
   let list=load('processos');
   if(id){ obj.criado=list.find(x=>x.id===id)?.criado||todayISO(); list=list.map(x=>x.id===id?obj:x) } else { list.unshift(obj) }
   save('processos',list);
-  clr('proc-id','proc-numero','proc-parte','proc-vara','proc-obs','proc-ind-perc','proc-ind-fixo','proc-ingresso');
+  clr('proc-id','proc-numero','proc-parte','proc-vara','proc-obs','proc-ind-perc','proc-ind-fixo','proc-ingresso','proc-sistema');
   setV('proc-cli-id',''); setV('proc-parceiro-id',''); setV('proc-ind-tipo',''); setV('proc-ind-status','pendente');
   const wrap=document.getElementById('proc-ind-valor-wrap'); if(wrap) wrap.style.display='none';
   closeModal('modal-proc'); renderAll(); toast('Processo salvo ✓');
@@ -1800,7 +1819,7 @@ function editarProcesso(id){
   document.getElementById('modal-proc-title').textContent='Editar Processo';
   popularCliSelect('proc-cli-id');
   popularParceiroSelect('proc-parceiro-id');
-  setV('proc-id',p.id); setV('proc-numero',p.numero); setV('proc-ingresso',p.ingresso||''); setV('proc-cli-id',p.clienteId||'');
+  setV('proc-id',p.id); setV('proc-numero',p.numero); setV('proc-ingresso',p.ingresso||''); setV('proc-sistema',p.sistema||''); setV('proc-cli-id',p.clienteId||'');
   setV('proc-parte',p.parte||p.cliente||''); setV('proc-vara',p.vara); setV('proc-status',p.status); setV('proc-obs',p.obs); setV('proc-ingresso',p.ingresso||''); setV('proc-ingresso',p.ingresso||'');
   if(p.indicacao?.parceiroId){
     setV('proc-parceiro-id',p.indicacao.parceiroId);
@@ -1844,11 +1863,10 @@ function renderProcessos(){
         ${p.parte?`<div style="font-size:11px;color:var(--text2);margin-top:2px"><span style="color:var(--text3)">x</span> ${p.parte}</div>`:''}
       </td>
       <td style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">${p.ingresso?fmtData(p.ingresso):'—'}</td>
-      <td><span class="tag t-blue">${p.area||'—'}</span></td>
+      <td><span class="tag t-blue" style="font-size:10px">${p.sistema||'—'}</span></td>
       <td style="color:var(--text2);font-size:12px">${p.vara||'—'}</td>
       <td><span class="tag ${statusTagCls(p.status)}">${p.status||'—'}</span></td>
-      <td>${p.resp?respBadge(p.resp):'<span style="color:var(--text3)">—</span>'}</td>
-      <td>${indBadge||'<span style="color:var(--text3);font-size:12px">—</span>'}</td>
+      <td class="col-indicacao">${indBadge||'<span style="color:var(--text3);font-size:12px">—</span>'}</td>
       <td><button class="icon-btn" onclick="abrirMovimentacoes('${p.id}')" title="Movimentações" style="color:var(--blue)">📋${nm>0?' '+nm:''}</button></td>
       <td><button class="icon-btn" onclick="editarProcesso('${p.id}')">✎</button><button class="icon-btn" onclick="excluirProcesso('${p.id}')" style="color:var(--red)">✕</button></td>
     </tr>`;
@@ -1863,7 +1881,7 @@ function salvarPrazo(){
   const _prazoResp=isSocio()?v('prazo-resp')||null:usuarioLogadoId();
   const obj={id:id||uid(),desc:v('prazo-desc'),data:v('prazo-data'),urgencia:v('prazo-urg'),proc:v('prazo-proc'),resp:_prazoResp,obs:v('prazo-obs')||'',criadoPor:usuarioLogadoId()};
   let list=load('prazos');
-  if(id){ list=list.map(x=>x.id===id?obj:x) } else { list.push(obj) }
+  if(id){ list=list.map(x=>x.id===id?{...obj,done:x.done}:x) } else { list.push({...obj,done:false}) }
   list.sort((a,b)=>a.data.localeCompare(b.data)); save('prazos',list);
   clr('prazo-id','prazo-desc','prazo-data','prazo-proc','prazo-obs'); closeModal('modal-prazo'); renderAll(); toast('Prazo salvo ✓');
 }
@@ -1876,18 +1894,27 @@ function editarPrazo(id){
 function excluirPrazo(id){ if(!confirm('Excluir prazo?')) return; save('prazos',load('prazos').filter(x=>x.id!==id)); renderAll(); toast('Excluído.') }
 function renderPrazos(){
   const q=(document.getElementById('search-prazo')||{}).value||'';
-  let list=load('prazos').filter(p=>!q||JSON.stringify(p).toLowerCase().includes(q.toLowerCase()));
+  const mostrar=document.getElementById('prazo-mostrar-concluidos')?.checked||false;
+  let list=load('prazos').filter(p=>{
+    if(!mostrar&&p.done) return false;
+    return !q||JSON.stringify(p).toLowerCase().includes(q.toLowerCase());
+  });
   const tb=document.getElementById('prazo-tbody'); if(!tb) return;
-  if(!list.length){ tb.innerHTML=`<tr><td colspan="5"><div class="empty"><div class="empty-icon">⏱</div>Nenhum prazo.</div></td></tr>`; return }
-  tb.innerHTML=list.map(p=>{ const d=diasRest(p.data); const cor=d<=3?'var(--red)':d<=7?'var(--amber)':'var(--teal)'; return`<tr>
+  if(!list.length){ tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-icon">⏱</div>${mostrar?'Nenhum prazo cadastrado.':'Nenhum prazo em aberto.'}</div></td></tr>`; return }
+  tb.innerHTML=list.map(p=>{
+    const d=diasRest(p.data);
+    const cor=p.done?'var(--text3)':d<=3?'var(--red)':d<=7?'var(--amber)':'var(--teal)';
+    return`<tr style="opacity:${p.done?.55:1}">
     <td style="font-family:var(--font-mono);font-size:12px;color:${cor}">${fmtData(p.data)}</td>
-    <td><strong>${p.desc||'—'}</strong></td>
+    <td><strong style="${p.done?'text-decoration:line-through;color:var(--text3)':''}">${p.desc||'—'}</strong></td>
     <td style="color:var(--text2);font-size:11px;font-family:var(--font-mono)">${p.proc||'—'}</td>
     <td><span class="tag ${{critica:'t-red',alta:'t-amber',normal:'t-gray'}[p.urgencia]}">${{critica:'Crítica',alta:'Alta',normal:'Normal'}[p.urgencia]}</span>
-      <span style="font-size:11px;color:var(--text3);margin-left:4px">${d>=0?(d===0?'hoje':d===1?'amanhã':d+' dias'):'vencido'}</span></td>
+      ${!p.done?`<span style="font-size:11px;color:${cor};margin-left:4px">${d>=0?(d===0?'hoje':d===1?'amanhã':d+' dias'):'vencido'}</span>`:''}</td>
     <td>${p.resp?respBadge(p.resp):'—'}</td>
+    <td><button class="icon-btn" onclick="togglePrazo('${p.id}')" title="${p.done?'Reabrir':'Concluir'}" style="color:${p.done?'var(--text3)':'var(--green)'};font-size:15px">${p.done?'↩':'✓'}</button></td>
     <td><button class="icon-btn" onclick="editarPrazo('${p.id}')">✎</button><button class="icon-btn" onclick="excluirPrazo('${p.id}')" style="color:var(--red)">✕</button></td>
-  </tr>` }).join('');
+  </tr>`;
+  }).join('');
 }
 
 // ═══════════════════════════════════════════
@@ -2187,7 +2214,9 @@ function editarPend(id){ const p=load('pendencias').find(x=>x.id===id); if(!p) r
 function excluirPend(id){ if(!confirm('Excluir?')) return; save('pendencias',load('pendencias').filter(x=>x.id!==id)); renderAll(); toast('Excluído.') }
 function renderPendencias(){
   const q=(document.getElementById('search-pend')||{}).value||'';
+  const mostrarConcPend=document.getElementById('pend-mostrar-concluidas')?.checked||false;
   let list=load('pendencias').filter(p=>{
+    if(!mostrarConcPend&&p.done) return false;
     if(!JSON.stringify(p).toLowerCase().includes(q.toLowerCase())&&q) return false;
     if(_usuarioLogado&&!isSocio()) return !p.resp||p.resp===_usuarioLogado.id;
     return true;
@@ -2484,7 +2513,7 @@ function renderPainel(){
     const isParc2=_usuarioLogado&&!isSocio();
     const uid2=usuarioLogadoId();
     const prazosFiltrados=isParc2?prazos.filter(p=>!p.resp||p.resp===uid2):prazos;
-    const proxPrazos=prazosFiltrados.filter(p=>diasRest(p.data)>=0).slice(0,5);
+    const proxPrazos=prazosFiltrados.filter(p=>diasRest(p.data)>=0&&!p.done).slice(0,5);
     if(!proxPrazos.length){
       pl.innerHTML=`<div class="empty" style="padding:16px 0"><div class="empty-icon">⏱</div>Nenhum prazo próximo.</div>`;
     } else {
@@ -2498,9 +2527,9 @@ function renderPainel(){
             <div class="prazo-name">${p.desc||'—'}</div>
             <div class="prazo-proc">${p.proc?p.proc+' · ':''}<span style="color:${cor}">${d===0?'hoje':d===1?'amanhã':d+' dias'}</span>${p.resp?' · '+respBadge(p.resp):''}</div>
           </div>
-          <div class="dot" style="background:${urgDot(p.urgencia)}"></div>
+          <button class="icon-btn" onclick="togglePrazo('${p.id}')" title="Concluir" style="color:var(--green);font-size:15px;flex-shrink:0">✓</button>
         </div>`;
-      }).join('');
+      }).join('');;
     }
   }
 
@@ -3386,9 +3415,9 @@ function setSyncStatus(s){
 // USUÁRIOS E AUTENTICAÇÃO
 // ═══════════════════════════════════════════════════════
 const USUARIOS={
-  alvaro:{id:'alvaro',nome:'Álvaro Carvalho Ribeiro',nomeAbrev:'Álvaro',initials:'AC',email:'alvarocarvalho.ac@gmail.com',role:'socio',color:'#2563eb',senhaHash:'alvaro123'},
+  alvaro:{id:'alvaro',nome:'Álvaro Carvalho Ribeiro',nomeAbrev:'Álvaro',initials:'AC',email:'alvarocarvalho.ac@gmail.com',role:'socio',color:'#2563eb',senhaHash:'Alvinc17'},
   bruno: {id:'bruno', nome:'Bruno de Souza Rodrigues',nomeAbrev:'Bruno', initials:'BR',email:'brunoadv9@gmail.com',          role:'socio',color:'#7c3aed',senhaHash:'bruno123'},
-  laisla:{id:'laisla',nome:'Laisla',                  nomeAbrev:'Laisla',initials:'LA',email:'laisla@ribeiroerodrigues.adv.br',role:'parceira',color:'#059669',senhaHash:'laisla123'},
+  laisla:{id:'laisla',nome:'Laisla',                  nomeAbrev:'Laisla',initials:'LA',email:'laisla.benevides1@hotmail.com',role:'parceira',color:'#059669',senhaHash:'laisla123'},
 };
 // Nota: Thaís pode ser adicionada via "Gerenciar Equipe" no painel.
 // NOTA: Senhas acima são PROVISÓRIAS. Altere antes do deploy ou use Firebase Auth.
@@ -3842,10 +3871,10 @@ function salvarModelo(){
   if(!nome){toast('Informe o nome do modelo.');return;}
   const obj={id:id||uid(),nome,tipo:v('modelo-tipo'),desc:v('modelo-desc'),criado:todayISO(),
     fileData:_modeloFileData||undefined,fileName:_modeloFileName||undefined,fileType:_modeloFileType||undefined};
-  if(id){ obj.criado=load('modelos').find(x=>x.id===id)?.criado||todayISO(); }
-  let list=load('modelos');
+  if(id){ obj.criado=load('Modelos').find(x=>x.id===id)?.criado||todayISO(); }
+  let list=load('Modelos');
   if(id){ list=list.map(x=>x.id===id?obj:x); } else { list.unshift(obj); }
-  try{ save('modelos',list); }
+  try{ save('Modelos',list); }
   catch(e){ toast('Arquivo muito grande para salvar localmente. Tente um arquivo menor (máx. 2MB).'); return; }
   clr('modelo-id','modelo-nome','modelo-desc');
   setV('modelo-tipo','peticao');
@@ -3856,7 +3885,7 @@ function salvarModelo(){
 }
 
 function editarModelo(id){
-  const m=load('modelos').find(x=>x.id===id); if(!m) return;
+  const m=load('Modelos').find(x=>x.id===id); if(!m) return;
   document.getElementById('modal-modelo-title').textContent='Editar Modelo';
   setV('modelo-id',m.id); setV('modelo-nome',m.nome); setV('modelo-tipo',m.tipo||'outro'); setV('modelo-desc',m.desc||'');
   if(m.fileData){
@@ -3873,19 +3902,19 @@ function editarModelo(id){
 
 function excluirModelo(id){
   if(!confirm('Excluir modelo?')) return;
-  save('modelos',load('modelos').filter(x=>x.id!==id));
+  save('Modelos',load('Modelos').filter(x=>x.id!==id));
   renderModelos(); toast('Modelo excluído.');
 }
 
 function baixarModelo(id){
-  const m=load('modelos').find(x=>x.id===id); if(!m||!m.fileData){toast('Nenhum arquivo anexado.');return;}
+  const m=load('Modelos').find(x=>x.id===id); if(!m||!m.fileData){toast('Nenhum arquivo anexado.');return;}
   const a=document.createElement('a'); a.href=m.fileData; a.download=m.fileName||m.nome; a.click();
   toast('Download iniciado ✓');
 }
 
 function renderModelos(){
   const q=(document.getElementById('search-modelos')||{}).value||'';
-  const list=load('modelos').filter(m=>!q||JSON.stringify(m).toLowerCase().includes(q.toLowerCase()));
+  const list=load('Modelos').filter(m=>!q||JSON.stringify(m).toLowerCase().includes(q.toLowerCase()));
   const grid=document.getElementById('modelos-grid'); if(!grid) return;
   if(!list.length){
     grid.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📄</div>Nenhum modelo cadastrado.<br><button class="btn btn-main btn-sm" onclick="openModal('modal-modelo')" style="margin-top:12px">+ Criar primeiro modelo</button></div>`;
@@ -3895,7 +3924,6 @@ function renderModelos(){
     const tipo=MODELO_TIPOS[m.tipo]||MODELO_TIPOS.outro;
     const mid=m.id;
     return `<div class="modelo-card">
-      <div class="modelo-card-icon">${tipo.icon}</div>
       <div class="modelo-card-nome">${m.nome}</div>
       <div class="modelo-card-tipo">${tipo.label} · ${fmtData(m.criado)}</div>
       ${m.desc?`<div class="modelo-card-desc">${m.desc}</div>`:''}
@@ -4286,6 +4314,12 @@ async function salvarCredencialFirestore(uid, campos){
   try{
     await _db.collection('escritorio').doc('usuarios').set(update, {merge:true});
   } catch(e){ console.warn('Erro ao salvar credencial:', e); }
+}
+
+function togglePrazo(id){
+  const list=load('prazos').map(x=>x.id===id?{...x,done:!x.done}:x);
+  save('prazos',list);
+  setTimeout(()=>{try{renderPrazos();renderPainel();}catch(e){}},150);
 }
 
 window.addEventListener('DOMContentLoaded',()=>{
