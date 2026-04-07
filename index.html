@@ -572,9 +572,12 @@ th{color:var(--text2)!important;font-weight:700}
   /* Todos os painéis: altura uniforme */
   .panel-body{max-height:160px;overflow-y:auto;-webkit-overflow-scrolling:touch}
 
-  /* Processos Recentes e Próximos Prazos: mesma altura dos outros painéis */
-  #panel-procs .panel-body{max-height:160px!important;overflow-y:auto}
-  #panel-prazos .panel-body{max-height:160px!important;overflow-y:auto}
+  /* Processos Recentes e Próximos Prazos: altura fixa igual aos outros */
+  #panel-procs,#panel-prazos{max-height:none}
+  #panel-procs .panel-body,#panel-prazos .panel-body{max-height:150px!important;overflow-y:auto}
+  /* Proc item mobile: mais compacto */
+  .proc-item .tag{display:none}
+  .proc-num{font-size:9px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95%}
   #panel-fin .panel-body{max-height:160px}
   #panel-agenda .panel-body{max-height:160px}
   #panel-pend .panel-body{max-height:160px}
@@ -1581,7 +1584,18 @@ const MESES_L=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Ag
 const MESES_S=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200) }
 
-function sistemaCls(s){ return{PJe:'t-blue','e-Proc':'t-teal','e-SAJ':'t-orange',PROJUDI:'t-rose',SAPJUS:'t-amber',Outro:'t-gray'}[s]||'t-gray' }
+function sistemaStyle(s){
+  const map={
+    PJe:    'background:#dbeafe;color:#1e40af',
+    'e-Proc':'background:#d1fae5;color:#065f46',
+    'e-SAJ': 'background:#ffedd5;color:#9a3412',
+    PROJUDI: 'background:#fce7f3;color:#9d174d',
+    SAPJUS:  'background:#fef3c7;color:#92400e',
+    Outro:   'background:var(--bg4);color:var(--text2)'
+  };
+  return map[s]||'background:var(--bg4);color:var(--text2)';
+}
+function sistemaCls(s){ return ''; }
 function statusTagCls(s){ return{Inicial:'t-blue',Instrução:'t-teal',Audiência:'t-amber',Sentença:'t-rose',Recursal:'t-orange',Execução:'t-green',Acordo:'t-green2',Arquivado:'t-red','Concluso p/ decisão':'t-purple','Concluso p/ julgamento':'t-purple','Concluso p/ despacho':'t-purple2'}[s]||'t-gray' }
 function priTagCls(p){ return{urgente:'t-red',medio:'t-amber',normal:'t-blue',baixo:'t-teal'}[p]||'t-gray' }
 function agendaCor(t){ if(t.includes('presencial'))return'var(--amber)'; if(t.includes('virtual'))return'var(--blue)'; if(t.includes('Reunião'))return'var(--rose)'; if(t.includes('Consulta'))return'var(--green)'; return'var(--text3)' }
@@ -1877,7 +1891,7 @@ function renderProcessos(){
   const mostrarArq=document.getElementById('proc-mostrar-arquivados')?.checked||false;
   const ordemInv=document.getElementById('proc-ordem-inv')?.checked||false;
   let list=load('processos').filter(p=>{
-    if(!mostrarArq&&p.status==='Arquivado') return false;
+    if(!mostrarArq&&(p.status==='Arquivado'||p.status==='Acordo')) return false;
     if(filtroFase&&p.status!==filtroFase) return false;
     return !q||JSON.stringify(p).toLowerCase().includes(q.toLowerCase());
   });
@@ -1912,7 +1926,7 @@ function renderProcessos(){
         ${p.parte?`<div style="font-size:11px;color:var(--text2);margin-top:2px"><span style="color:var(--text3)">x</span> ${p.parte}</div>`:''}
       </td>
       <td style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">${p.ingresso?fmtData(p.ingresso):'—'}</td>
-      <td><span class="tag ${sistemaCls(p.sistema)}" style="font-size:10px">${p.sistema||'—'}</span></td>
+      <td><span class="tag" style="font-size:10px;${sistemaStyle(p.sistema)}">${p.sistema||'—'}</span></td>
       <td style="color:var(--text2);font-size:12px">${p.vara||'—'}</td>
       <td><span class="tag ${statusTagCls(p.status)}">${p.status||'—'}</span></td>
       <td class="col-indicacao">${indBadge||'<span style="color:var(--text3);font-size:12px">—</span>'}</td>
@@ -2083,12 +2097,17 @@ function salvarReceita(){
   const id=v('rec-id');
   const obj={id:id||uid(),tipo:'receita',desc:v('rec-desc'),valor:parseFloat(v('rec-valor'))||0,data:v('rec-data'),cat:v('rec-cat'),status:v('rec-status'),procId:v('rec-proc-id')||undefined};
   let list=load('financeiro'); if(id){ list=list.map(x=>x.id===id?obj:x) } else { list.unshift(obj) }
+  // Bloquear onSnapshot antes do save para evitar re-render durante operação
+  window._modalClosing=true;
   save('financeiro',list);
   clr('rec-id','rec-desc','rec-valor','rec-data');
   closeModal('modal-rec');
   toast(id?'Receita atualizada ✓':'Receita salva ✓');
-  // Render imediato — não espera Firestore
-  try{ renderFinanceiro(); renderPainel(); }catch(e){}
+  // Render após animação de fechamento do modal
+  setTimeout(()=>{
+    window._modalClosing=false;
+    try{ renderFinanceiro(); renderPainel(); }catch(e){}
+  },50);
 }
 function salvarDespesa(){
   const id=v('desp-id');
@@ -2492,7 +2511,7 @@ function imprimirFicha(){
 function renderPainel(){
   const procs=load('processos'), prazos=load('prazos'), fin=load('financeiro'), agenda=load('agenda'), pend=load('pendencias'), notas=load('notas');
   const hoje=todayISO(), mes=thisMonth();
-  const ativos=procs.filter(p=>p.status!=='Arquivado');
+  const ativos=procs.filter(p=>p.status!=='Arquivado'&&p.status!=='Acordo');
   const urgentes=prazos.filter(p=>!p.done&&diasRest(p.data)===0).length;
   const honor=fin.filter(f=>f.tipo==='receita'&&f.status==='recebido'&&f.data?.startsWith(mes)).reduce((s,f)=>s+f.valor,0);
   // Use painelAgendaData for the agenda panel date (supports navigation)
@@ -2535,7 +2554,7 @@ function renderPainel(){
     else{ const recentes=[...ativos].sort((a,b)=>{
       const da=a.ingresso||a.criado||'', db=b.ingresso||b.criado||'';
       return db.localeCompare(da);
-    }).slice(0,5);
+    }).slice(0, window.innerWidth<=768?3:5);
     pp.innerHTML=recentes.map(p=>{
       const cli=clientes.find(c=>c.id===p.clienteId);
       const nomeCliente=cli?cli.nome:(p.cliente||'—');
@@ -2573,7 +2592,7 @@ function renderPainel(){
     const isParc2=_usuarioLogado&&!isSocio();
     const uid2=usuarioLogadoId();
     const prazosFiltrados=isParc2?prazos.filter(p=>!p.resp||p.resp===uid2):prazos;
-    const proxPrazos=prazosFiltrados.filter(p=>diasRest(p.data)>=0&&!p.done).slice(0,5);
+    const proxPrazos=prazosFiltrados.filter(p=>diasRest(p.data)>=0&&!p.done).slice(0, window.innerWidth<=768?3:5);
     if(!proxPrazos.length){
       pl.innerHTML=`<div class="empty" style="padding:16px 0"><div class="empty-icon">⏱</div>Nenhum prazo próximo.</div>`;
     } else {
