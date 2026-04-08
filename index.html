@@ -564,51 +564,28 @@ th{color:var(--text2)!important;font-weight:700}
 
 /* ── PAINEL MOBILE ── */
 @media(max-width:768px){
-  /* Forçar coluna única em todos os grids */
   .two-col,.three-col,.four-col{grid-template-columns:1fr!important;gap:8px!important}
   .view-content{padding:10px 8px!important}
-  .panel{margin-bottom:0}
-
-  /* Todos os painéis: altura uniforme */
-  .panel-body{max-height:160px;overflow-y:auto;-webkit-overflow-scrolling:touch}
-
-  /* Processos Recentes e Próximos Prazos: altura fixa igual aos outros */
-  #panel-procs,#panel-prazos{max-height:none}
-  #panel-procs .panel-body,#panel-prazos .panel-body{max-height:150px!important;overflow-y:auto}
-  /* Proc item mobile: mais compacto */
-  .proc-item .tag{display:none}
-  .proc-num{font-size:9px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95%}
-  #panel-fin .panel-body{max-height:160px}
-  #panel-agenda .panel-body{max-height:160px}
-  #panel-pend .panel-body{max-height:160px}
-
-  /* Proc items compactos no painel */
-  .proc-item{padding:6px 8px;gap:6px;flex-wrap:nowrap;align-items:flex-start}
-  .proc-num{font-size:9px!important;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:1px;display:block}
-  .proc-name{font-size:11px!important;line-height:1.3}
-  .proc-info{min-width:0;flex:1}
-
-  /* Prazo items compactos */
-  .prazo-item{padding:6px 6px;gap:6px}
-  .prazo-date{min-width:32px}
-  .prazo-day{font-size:15px!important;line-height:1}
-  .prazo-month{font-size:9px!important}
-  .prazo-name{font-size:11px!important}
-  .prazo-proc{font-size:10px!important}
-
-  /* Métricas 2x2 */
+  .panel{overflow:hidden}
+  .panel-body{height:148px!important;max-height:148px!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch}
+  .proc-item{padding:5px 8px!important;gap:6px!important;flex-wrap:nowrap!important;align-items:flex-start!important}
+  .proc-item .tag{display:none!important}
+  .proc-num{font-size:9px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;width:100%!important;display:block!important;margin-bottom:1px!important}
+  .proc-name{font-size:11px!important;line-height:1.3!important}
+  .proc-info{min-width:0!important;flex:1!important;overflow:hidden!important}
+  .prazo-item{padding:5px 6px!important;gap:5px!important}
+  .prazo-date{min-width:28px!important}
+  .prazo-day{font-size:14px!important;line-height:1!important}
+  .prazo-month{font-size:8px!important}
+  .prazo-name{font-size:10px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  .prazo-proc{font-size:9px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
   .metrics{grid-template-columns:1fr 1fr!important;gap:7px!important}
   .metric-card{padding:10px 8px!important}
   .metric-value{font-size:17px!important}
   .metric-label{font-size:10px!important}
   .metric-sub{font-size:9px!important}
-
-  /* Tags menores */
   .tag{font-size:9px!important;padding:2px 5px!important}
-
-  /* Cabeçalho do painel menor */
   .panel-header{padding:8px 12px!important}
-  .panel-header-title{font-size:11px!important}
 }
 /* ── SHAKE ── */
 @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
@@ -1775,7 +1752,9 @@ function openModal(id){
   ['prazo-data','rec-data','desp-data','agenda-data','atend-data','mov-data'].forEach(f=>{ const el=document.getElementById(f); if(el&&!el.value) el.value=td });
   if(id==='modal-proc'){ popularCliSelect('proc-cli-id'); popularParceiroSelect('proc-parceiro-id'); }
   if(id==='modal-rec'||id==='modal-desp') popularProcSelect();
-  if(id==='modal-config') abrirConfig(); // handled directly
+  if(id==='modal-pend') popularProcSelectGeneric('pend-proc');
+  if(id==='modal-prazo') popularProcSelectGeneric('prazo-proc-sel');
+  if(id==='modal-config') abrirConfig();
 }
 function closeModal(id){
   document.getElementById(id).classList.remove('open');
@@ -2131,10 +2110,16 @@ function salvarDespesa(){
       }
     }
   }
-  save('financeiro',list); clr('desp-id','desp-desc','desp-valor','desp-data'); setV('desp-recorrencia',''); closeModal('modal-desp');
+  window._modalClosing=true;
+  save('financeiro',list);
+  clr('desp-id','desp-desc','desp-valor','desp-data');
+  setV('desp-recorrencia','');
+  closeModal('modal-desp');
   toast(id?'Despesa atualizada ✓':'Despesa salva ✓');
-  // Render imediato — não espera Firestore
-  try{ renderFinanceiro(); renderPainel(); }catch(e){}
+  setTimeout(()=>{
+    window._modalClosing=false;
+    try{ renderFinanceiro(); renderPainel(); }catch(e){}
+  },50);
 }
 function excluirFin(id){ if(!confirm('Excluir lançamento?')) return; save('financeiro',load('financeiro').filter(x=>x.id!==id)); renderAll(); toast('Excluído.') }
 function editarFin(id){
@@ -2284,7 +2269,7 @@ function salvarPendencia(){
   save('pendencias',list); clr('pend-id','pend-desc','pend-data','pend-obs','pend-proc'); closeModal('modal-pend'); renderAll(); toast('Pendência salva ✓');
 }
 function togglePend(id){ save('pendencias',load('pendencias').map(x=>x.id===id?{...x,done:!x.done}:x)); renderAll() }
-function editarPend(id){ const p=load('pendencias').find(x=>x.id===id); if(!p) return; document.getElementById('modal-pend-title').textContent='Editar Pendência'; setV('pend-id',p.id); setV('pend-desc',p.desc); setV('pend-pri',p.pri); setV('pend-data',p.data||''); setV('pend-resp',p.resp||''); setV('pend-obs',p.obs||''); setV('pend-proc',p.proc||''); setV('pend-resp',p.resp||''); openModal('modal-pend') }
+function editarPend(id){ const p=load('pendencias').find(x=>x.id===id); if(!p) return; document.getElementById('modal-pend-title').textContent='Editar Pendência'; setV('pend-id',p.id); setV('pend-desc',p.desc); setV('pend-pri',p.pri); setV('pend-data',p.data||''); setV('pend-resp',p.resp||''); setV('pend-obs',p.obs||''); setV('pend-resp',p.resp||''); popularProcSelectGeneric('pend-proc'); setTimeout(()=>setV('pend-proc',p.proc||''),30); openModal('modal-pend') }
 function excluirPend(id){ if(!confirm('Excluir?')) return; save('pendencias',load('pendencias').filter(x=>x.id!==id)); renderAll(); toast('Excluído.') }
 function renderPendencias(){
   const q=(document.getElementById('search-pend')||{}).value||'';
