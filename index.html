@@ -442,7 +442,7 @@ html[data-theme="slate"]{--teal:#475569;--teal2:#334155;--teal-dim:rgba(71,85,10
   th,td{padding:8px 10px;font-size:11px}
   /* Modals */
   .modal-overlay{align-items:flex-end}
-  .modal{min-width:unset;width:100%;max-width:100%;margin:0;border-radius:20px 20px 0 0;max-height:92vh;padding:20px 16px}
+  .modal{min-width:unset;width:100%;max-width:100%;margin:0;border-radius:20px 20px 0 0;max-height:90vh;overflow-y:auto;padding:20px 16px}
   /* Panels */
   .panel-header{padding:12px 14px 10px}
   .panel-body{padding:10px 14px}
@@ -1762,7 +1762,11 @@ function closeModal(id){
   setTimeout(()=>{ window._modalClosing=false; }, 450);
   ['modal-proc-title','modal-prazo-title','modal-cli-title','modal-atend-title','modal-rec-title','modal-desp-title','modal-agenda-title','modal-pend-title','modal-nota-title','modal-mov-title'].forEach(tid=>{ const el=document.getElementById(tid); if(el&&id===el.closest('.modal-overlay')?.id) el.textContent=el.textContent.replace('Editar ','Novo ').replace('Editar ','Nova ') });
 }
-document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) closeModal(o.id) }));
+document.querySelectorAll('.modal-overlay').forEach(o=>{
+  o.addEventListener('click',e=>{ if(e.target===o) closeModal(o.id); });
+  const modal=o.querySelector('.modal');
+  if(modal) modal.addEventListener('click',e=>e.stopPropagation());
+});
 
 // ═══════════════════════════════════════════
 // NAVIGATION
@@ -2076,17 +2080,11 @@ function salvarReceita(){
   const id=v('rec-id');
   const obj={id:id||uid(),tipo:'receita',desc:v('rec-desc'),valor:parseFloat(v('rec-valor'))||0,data:v('rec-data'),cat:v('rec-cat'),status:v('rec-status'),procId:v('rec-proc-id')||undefined};
   let list=load('financeiro'); if(id){ list=list.map(x=>x.id===id?obj:x) } else { list.unshift(obj) }
-  // Bloquear onSnapshot antes do save para evitar re-render durante operação
-  window._modalClosing=true;
   save('financeiro',list);
   clr('rec-id','rec-desc','rec-valor','rec-data');
-  closeModal('modal-rec');
+  document.getElementById('modal-rec').classList.remove('open');
   toast(id?'Receita atualizada ✓':'Receita salva ✓');
-  // Render após animação de fechamento do modal
-  setTimeout(()=>{
-    window._modalClosing=false;
-    try{ renderFinanceiro(); renderPainel(); }catch(e){}
-  },50);
+  try{ renderFinanceiro(); renderPainel(); }catch(e){}
 }
 function salvarDespesa(){
   const id=v('desp-id');
@@ -2110,16 +2108,12 @@ function salvarDespesa(){
       }
     }
   }
-  window._modalClosing=true;
   save('financeiro',list);
   clr('desp-id','desp-desc','desp-valor','desp-data');
   setV('desp-recorrencia','');
-  closeModal('modal-desp');
+  document.getElementById('modal-desp').classList.remove('open');
   toast(id?'Despesa atualizada ✓':'Despesa salva ✓');
-  setTimeout(()=>{
-    window._modalClosing=false;
-    try{ renderFinanceiro(); renderPainel(); }catch(e){}
-  },50);
+  try{ renderFinanceiro(); renderPainel(); }catch(e){}
 }
 function excluirFin(id){ if(!confirm('Excluir lançamento?')) return; save('financeiro',load('financeiro').filter(x=>x.id!==id)); renderAll(); toast('Excluído.') }
 function editarFin(id){
