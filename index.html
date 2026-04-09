@@ -652,19 +652,19 @@ th{color:var(--text2)!important;font-weight:700}
 
   <!-- Perfil gerenciado via login -->
   <nav class="nav">
-    <div class="nav-label">Principal</div>
+<div class="nav-section-label" style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:12px 16px 4px;margin-top:4px">Principal</div>
     <button class="nav-item active" id="nav-painel"      onclick="showView('painel')"><span class="nav-ico">◉</span>Painel Geral</button>
     <button class="nav-item"        id="nav-processos"   onclick="showView('processos')"><span class="nav-ico">📁</span>Processos<span class="nav-badge nb-blue" id="badge-proc">0</span></button>
+    <button class="nav-item"        id="nav-agenda"      onclick="showView('agenda')"><span class="nav-ico">🗓</span>Agenda<span class="nav-badge nb-blue" id="badge-agenda">0</span></button>
     <button class="nav-item"        id="nav-prazos"      onclick="showView('prazos')"><span class="nav-ico">⏱</span>Prazos<span class="nav-badge nb-red" id="badge-prazo">0</span></button>
-    <div class="nav-label" style="margin-top:6px">Operações</div>
+    <button class="nav-item"        id="nav-pendencias"  onclick="showView('pendencias')"><span class="nav-ico">✔</span>Pendências<span class="nav-badge nb-amber" id="badge-pend">0</span></button>
+<div class="nav-section-label" style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:12px 16px 4px;margin-top:4px">Operações</div>
     <button class="nav-item"        id="nav-clientes"    onclick="showView('clientes')"><span class="nav-ico">👥</span>Clientes<span class="nav-badge nb-blue" id="badge-cli">0</span></button>
     <button class="nav-item"        id="nav-financeiro"  onclick="showView('financeiro')"><span class="nav-ico">💰</span>Financeiro</button>
     <button class="nav-item"        id="nav-metas"       onclick="showView('metas')"><span class="nav-ico">🎯</span>Metas</button>
-    <button class="nav-item"        id="nav-agenda"      onclick="showView('agenda')"><span class="nav-ico">🗓</span>Agenda<span class="nav-badge nb-blue" id="badge-agenda">0</span></button>
-    <button class="nav-item"        id="nav-pendencias"  onclick="showView('pendencias')"><span class="nav-ico">✔</span>Pendências<span class="nav-badge nb-amber" id="badge-pend">0</span></button>
-    <div class="nav-label" style="margin-top:6px">Ferramentas</div>
     <button class="nav-item"        id="nav-parceiros"   onclick="showView('parceiros')"><span class="nav-ico">🤝</span>Parceiros</button>
     <button class="nav-item"        id="nav-anotacoes"   onclick="showView('anotacoes')"><span class="nav-ico">📝</span>Anotações</button>
+<div class="nav-section-label" style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:12px 16px 4px;margin-top:4px">Ferramentas</div>
     <button class="nav-item"        id="nav-modelos"     onclick="showView('modelos')"><span class="nav-ico">📄</span>Modelos</button>
     <button class="nav-item"        id="nav-timeline"    onclick="showView('timeline')"><span class="nav-ico">📋</span>Linha do Tempo</button>
     <button class="nav-item"        id="nav-relatorios"  onclick="showView('relatorios')"><span class="nav-ico">📊</span>Relatórios</button>
@@ -734,7 +734,7 @@ th{color:var(--text2)!important;font-weight:700}
         <button class="btn btn-main" onclick="openModal('modal-proc')">+ Novo Processo</button>
       </div>
       <div class="table-wrap"><table>
-        <thead><tr><th>Número</th><th>Cliente / Parte</th><th style="cursor:pointer;user-select:none;white-space:nowrap" onclick="toggleOrdemProcessos()" title="Clique para inverter a ordem"><span id="th-ingresso-label">Ingresso</span> <span id="th-ingresso-seta">↓</span></th><th>Sistema</th><th>Vara / Tribunal</th><th>Status</th><th class="col-indicacao">Indicação</th><th>Movim.</th><th>Ações</th></tr></thead>
+        <thead><tr><th>Número</th><th>Cliente / Parte</th><th style="cursor:pointer;user-select:none;white-space:nowrap" onclick="toggleOrdemProcessos()" title="Clique para inverter a ordem"><span id="th-ingresso-label">Ingresso</span> <span id="th-ingresso-seta">↓</span></th><th>Sistema</th><th>Vara</th><th>Status</th><th class="col-indicacao">Indicação</th><th>Movim.</th><th>Ações</th></tr></thead>
         <tbody id="proc-tbody"></tbody>
       </table></div>
     </div>
@@ -1128,7 +1128,7 @@ th{color:var(--text2)!important;font-weight:700}
     <div class="modal-title" id="modal-proc-title">Novo Processo</div>
     <input type="hidden" id="proc-id">
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Número do Processo</label><input class="form-input" id="proc-numero" placeholder="0000000-00.0000.0.00.0000"></div>
+      <div class="form-group"><label class="form-label">Número do Processo</label><input class="form-input" id="proc-numero" placeholder="0000000-00.0000.0.00.0000" oninput="this.value=formatarNumeroCNJ(this.value)"></div>
       <div class="form-group"><label class="form-label">Data de Ingresso</label><input class="form-input" type="date" id="proc-ingresso"></div>
     </div>
     <div class="form-group"><label class="form-label">Sistema Processual</label>
@@ -1137,7 +1137,36 @@ th{color:var(--text2)!important;font-weight:700}
     <div class="form-group"><label class="form-label">Cliente Vinculado</label><select class="form-input" id="proc-cli-id"><option value="">— Selecione (opcional) —</option></select></div>
     <div class="form-group"><label class="form-label">Parte / Descrição Adicional</label><input class="form-input" id="proc-parte" placeholder="Ex: vs Banco Delta, Espólio de..."></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Vara / Tribunal</label><input class="form-input" id="proc-vara" placeholder="Ex: 2ª Vara Cível TJBA"></div>
+      <div class="form-row">
+      <div class="form-group"><label class="form-label">Vara</label><input class="form-input" id="proc-vara" placeholder="Ex: 2ª Vara Cível"></div>
+      <div class="form-group"><label class="form-label">Tribunal</label><select class="form-input" id="proc-tribunal"><option value="">— Selecione —</option><option value="TJAC">TJAC</option>
+<option value="TJAL">TJAL</option>
+<option value="TJAM">TJAM</option>
+<option value="TJAP">TJAP</option>
+<option value="TJBA">TJBA</option>
+<option value="TJCE">TJCE</option>
+<option value="TJDF">TJDF</option>
+<option value="TJES">TJES</option>
+<option value="TJGO">TJGO</option>
+<option value="TJMA">TJMA</option>
+<option value="TJMG">TJMG</option>
+<option value="TJMS">TJMS</option>
+<option value="TJMT">TJMT</option>
+<option value="TJPA">TJPA</option>
+<option value="TJPB">TJPB</option>
+<option value="TJPE">TJPE</option>
+<option value="TJPI">TJPI</option>
+<option value="TJPR">TJPR</option>
+<option value="TJRJ">TJRJ</option>
+<option value="TJRN">TJRN</option>
+<option value="TJRO">TJRO</option>
+<option value="TJRR">TJRR</option>
+<option value="TJRS">TJRS</option>
+<option value="TJSC">TJSC</option>
+<option value="TJSE">TJSE</option>
+<option value="TJSP">TJSP</option>
+<option value="TJTO">TJTO</option></select></div>
+    </div>
       <div class="form-group"><label class="form-label">Status</label>
         <select class="form-input" id="proc-status" onchange="toggleNumProc2()"><option>Inicial</option><option>Instrução</option><option>Audiência</option><option>Sentença</option><option>Recursal</option><option>Execução</option><option>Acordo</option><option>Concluso p/ decisão</option><option>Concluso p/ julgamento</option><option>Concluso p/ despacho</option><option>Arquivado</option></select>
       </div>
@@ -1219,11 +1248,11 @@ th{color:var(--text2)!important;font-weight:700}
       <div class="form-group"><label class="form-label">Tipo</label>
         <select class="form-input" id="cli-tipo" onchange="atualizarTipoCli()"><option value="pf">Pessoa Física</option><option value="pj">Pessoa Jurídica</option></select>
       </div>
-      <div class="form-group"><label class="form-label" id="cli-doc-lbl">CPF</label><input class="form-input" id="cli-doc" placeholder="000.000.000-00"></div>
+      <div class="form-group"><label class="form-label" id="cli-doc-lbl">CPF</label><input class="form-input" id="cli-doc" placeholder="000.000.000-00" oninput="this.value=formatarCPF(this.value)"></div>
     </div>
     <div class="form-group"><label class="form-label">Nome Completo / Razão Social</label><input class="form-input" id="cli-nome" placeholder="Nome completo ou razão social"></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Telefone / WhatsApp</label><input class="form-input" id="cli-tel" placeholder="(00) 00000-0000"></div>
+      <div class="form-group"><label class="form-label">Telefone / WhatsApp</label><input class="form-input" id="cli-tel" oninput="this.value=formatarTelefone(this.value)" placeholder="(00) 00000-0000"></div>
       <div class="form-group"><label class="form-label">E-mail</label><input class="form-input" id="cli-email" placeholder="email@exemplo.com"></div>
     </div>
     <div class="form-row">
@@ -1764,8 +1793,6 @@ function closeModal(id){
 }
 document.querySelectorAll('.modal-overlay').forEach(o=>{
   o.addEventListener('click',e=>{ if(e.target===o) closeModal(o.id); });
-  const modal=o.querySelector('.modal');
-  if(modal) modal.addEventListener('click',e=>e.stopPropagation());
 });
 
 // ═══════════════════════════════════════════
@@ -1840,7 +1867,7 @@ function salvarProcesso(){
     valorFixo:parseFloat(v('proc-ind-fixo'))||null,
     status:v('proc-ind-status')||'pendente'
   };
-  const obj={id:id||uid(),numero:v('proc-numero'),area:'',sistema:v('proc-sistema')||'',clienteId:v('proc-cli-id'),parte:v('proc-parte'),vara:v('proc-vara'),status:v('proc-status'),num2:v('proc-num2')||'',obs:v('proc-obs'),ingresso:v('proc-ingresso')||null,indicacao:isSocio()?(ind.parceiroId?ind:null):null,criado:todayISO(),criadoPor:usuarioLogadoId()};
+  const obj={id:id||uid(),numero:formatarNumeroCNJ(v('proc-numero')),area:'',sistema:v('proc-sistema')||'',clienteId:v('proc-cli-id'),parte:v('proc-parte'),vara:v('proc-vara'),tribunal:v('proc-tribunal')||'',status:v('proc-status'),num2:v('proc-num2')||'',obs:v('proc-obs'),ingresso:v('proc-ingresso')||null,indicacao:isSocio()?(ind.parceiroId?ind:null):null,criado:todayISO(),criadoPor:usuarioLogadoId()};
   let list=load('processos');
   if(id){ obj.criado=list.find(x=>x.id===id)?.criado||todayISO(); list=list.map(x=>x.id===id?obj:x) } else { list.unshift(obj) }
   save('processos',list);
@@ -1855,7 +1882,7 @@ function editarProcesso(id){
   popularCliSelect('proc-cli-id');
   popularParceiroSelect('proc-parceiro-id');
   setV('proc-id',p.id); setV('proc-numero',p.numero); setV('proc-ingresso',p.ingresso||''); setV('proc-sistema',p.sistema||''); setV('proc-num2',p.num2||''); setV('proc-cli-id',p.clienteId||'');
-  setV('proc-parte',p.parte||p.cliente||''); setV('proc-vara',p.vara); setV('proc-status',p.status); setV('proc-obs',p.obs); setV('proc-ingresso',p.ingresso||''); setV('proc-ingresso',p.ingresso||'');
+  setV('proc-parte',p.parte||p.cliente||''); setV('proc-vara',p.vara); setV('proc-tribunal',p.tribunal||''); setV('proc-status',p.status); setV('proc-obs',p.obs); setV('proc-ingresso',p.ingresso||''); setV('proc-ingresso',p.ingresso||'');
   if(p.indicacao?.parceiroId){
     setV('proc-parceiro-id',p.indicacao.parceiroId);
     setV('proc-ind-tipo',p.indicacao.tipo||'');
@@ -1876,7 +1903,8 @@ function renderProcessos(){
   let list=load('processos').filter(p=>{
     if(!mostrarArq&&(p.status==='Arquivado'||p.status==='Acordo')) return false;
     if(filtroFase&&p.status!==filtroFase) return false;
-    return !q||JSON.stringify(p).toLowerCase().includes(q.toLowerCase());
+    return !q||_match(q, p.numero, p.parte, p.vara, p.tribunal, p.status, p.sistema, p.obs,
+      (load('clientes').find(c=>c.id===p.clienteId)||{}).nome||'');
   });
   // Ordenar por data de ingresso (padrão: mais recente primeiro)
   list.sort((a,b)=>{
@@ -1885,24 +1913,35 @@ function renderProcessos(){
   });
   const tb=document.getElementById('proc-tbody'); if(!tb) return;
   if(!list.length){ tb.innerHTML=`<tr><td colspan="8"><div class="empty"><div class="empty-icon">📁</div>Nenhum processo cadastrado.</div></td></tr>`; return }
-  tb.innerHTML=list.map(p=>{
-    const cli=clientes.find(c=>c.id===p.clienteId);
-    const nome=cli?cli.nome:(p.parte||p.cliente||'—');
-    const nm=movs.filter(m=>m.procId===p.id).length;
-    const ind=isSocio()?p.indicacao?.parceiroId:null;
-    const parc=ind?parceiros.find(x=>x.id===ind):null;
-    let indBadge='';
-    if(parc){
-      const st=p.indicacao?.status||'pendente';
-      const pago=st==='pago', exito=st==='exito';
-      const label=p.indicacao?.tipo==='percentual'?`${p.indicacao.percentual||0}%`:p.indicacao?.tipo==='fixo'?fmtBRL(p.indicacao.valorFixo||0):'';
-      const bg=pago?'var(--green-dim)':exito?'var(--blue-dim)':'var(--rose-dim)';
-      const cor=pago?'var(--green)':exito?'var(--blue)':'var(--rose)';
-      const icone=pago?'✓':exito?'⚖':'⏳';
-      const stLabel=pago?'Pago':exito?'No êxito':'A pagar';
-      indBadge=`<div style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:${bg};color:${cor};white-space:nowrap" title="${parc.nome}${label?' · '+label:''} · ${stLabel}">🤝 ${parc.nome.split(' ')[0]}${label?' · '+label:''} ${icone}</div>`;
-    }
-    return`<tr>
+  // Agrupar por Tribunal
+  const grupos={};
+  list.forEach(p=>{
+    const tj=p.tribunal||'Sem Tribunal';
+    if(!grupos[tj]) grupos[tj]=[];
+    grupos[tj].push(p);
+  });
+  const tjsOrdenados=Object.keys(grupos).sort((a,b)=>{
+    if(a==='Sem Tribunal') return 1;
+    if(b==='Sem Tribunal') return -1;
+    return a.localeCompare(b);
+  });
+  let rows='';
+  tjsOrdenados.forEach(tj=>{
+    rows+=`<tr><td colspan="9" style="background:var(--bg2);padding:6px 12px;font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.5px;border-top:2px solid var(--border)">${tj}</td></tr>`;
+    rows+=grupos[tj].map(p=>{
+      const cli=clientes.find(c=>c.id===p.clienteId);
+      const nome=cli?cli.nome:(p.parte||p.cliente||'—');
+      const nmovs=movs.filter(m=>m.procId===p.id).length;
+      const ind=isSocio()?p.indicacao?.parceiroId:null;
+      const parc=ind?parceiros.find(x=>x.id===ind):null;
+      let indBadge='';
+      if(parc){
+        const st=p.indicacao?.status||'pendente';
+        const pago=st==='pago', exito=st==='exito';
+        const label=p.indicacao?.tipo==='percentual'?`${p.indicacao.percentual}%`:p.indicacao?.tipo==='fixo'?fmtBRL(p.indicacao.valorFixo||0):'';
+        indBadge=`<span class="tag ${pago?'t-green':exito?'t-amber':'t-gray'}" style="font-size:9px" title="${parc.nome}">${parc.nome.split(' ')[0]}${label?' · '+label:''}</span>`;
+      }
+      return`<tr>
       <td style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">${p.numero||'—'}</td>
       <td>
         <div style="font-weight:700;color:var(--text1)">${nome}</div>
@@ -1913,10 +1952,13 @@ function renderProcessos(){
       <td style="color:var(--text2);font-size:12px">${p.vara||'—'}</td>
       <td><span class="tag ${statusTagCls(p.status)}">${p.status||'—'}</span></td>
       <td class="col-indicacao">${indBadge||'<span style="color:var(--text3);font-size:12px">—</span>'}</td>
-      <td><button class="icon-btn" onclick="abrirMovimentacoes('${p.id}')" title="Movimentações" style="color:var(--blue)">📋${nm>0?' '+nm:''}</button></td>
+      <td><button class="icon-btn" onclick="abrirMovimentacoes('${p.id}')" title="Movimentações" style="color:${nmovs>0?'var(--blue)':'var(--text3)'}">${nmovs>0?nmovs:'—'}</button></td>
       <td><button class="icon-btn" onclick="editarProcesso('${p.id}')">✎</button><button class="icon-btn" onclick="excluirProcesso('${p.id}')" style="color:var(--red)">✕</button></td>
     </tr>`;
-  }).join('');
+    }).join('')
+;
+  });
+  tb.innerHTML=rows || `<tr><td colspan="9"><div class="empty"><div class="empty-icon">📁</div>Nenhum processo.</div></td></tr>`;;
 }
 
 // ═══════════════════════════════════════════
@@ -1943,7 +1985,7 @@ function renderPrazos(){
   const mostrar=document.getElementById('prazo-mostrar-concluidos')?.checked||false;
   let list=load('prazos').filter(p=>{
     if(!mostrar&&p.done) return false;
-    return !q||JSON.stringify(p).toLowerCase().includes(q.toLowerCase());
+    return !q||_match(q, p.desc, p.proc, p.obs, p.urgencia, p.resp);
   });
   const tb=document.getElementById('prazo-tbody'); if(!tb) return;
   if(!list.length){ tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-icon">⏱</div>${mostrar?'Nenhum prazo cadastrado.':'Nenhum prazo em aberto.'}</div></td></tr>`; return }
@@ -1987,23 +2029,37 @@ function editarCliAtual(){ if(_cliAtivo) editarCliente(_cliAtivo) }
 function excluirCliente(id){ const c=load('clientes').find(x=>x.id===id); if(!confirm(`Excluir "${c?.nome}"?`)) return; save('clientes',load('clientes').filter(x=>x.id!==id)); save('atendimentos',load('atendimentos').filter(a=>a.clienteId!==id)); showView('clientes'); renderAll(); toast('Cliente excluído.') }
 function renderClientes(){
   const q=(document.getElementById('search-cli')||{}).value||'';
-  const list=load('clientes').filter(c=>!q||JSON.stringify(c).toLowerCase().includes(q.toLowerCase()));
+  let list=load('clientes').filter(c=>!q||JSON.stringify(c).toLowerCase().includes(q.toLowerCase()));
   const atends=load('atendimentos'), procs=load('processos');
   const badge=document.getElementById('badge-cli'); if(badge) badge.textContent=load('clientes').length;
   const tb=document.getElementById('cli-tbody'); if(!tb) return;
   if(!list.length){ tb.innerHTML=`<tr><td colspan="5"><div class="empty"><div class="empty-icon">👥</div>Nenhum cliente cadastrado.</div></td></tr>`; return }
-  tb.innerHTML=list.map(c=>{
-    const np=procs.filter(p=>p.clienteId===c.id).length;
-    const ca=atends.filter(a=>a.clienteId===c.id); const ult=ca.length?ca.sort((a,b)=>b.data.localeCompare(a.data))[0].data:'';
-    const init=c.nome.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
-    return`<tr style="cursor:pointer" onclick="abrirFicha('${c.id}')">
+  // Ordenar alfabeticamente (ignorando acentos)
+  list.sort((a,b)=>a.nome.localeCompare(b.nome,'pt',{sensitivity:'base'}));
+  // Agrupar por inicial (sem acento)
+  const grupos={};
+  list.forEach(c=>{
+    const letra=c.nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'')[0].toUpperCase()||'#';
+    if(!grupos[letra]) grupos[letra]=[];
+    grupos[letra].push(c);
+  });
+  const letrasOrdenadas=Object.keys(grupos).sort();
+  let rows='';
+  letrasOrdenadas.forEach(letra=>{
+    rows+=`<tr><td colspan="5" style="background:var(--bg2);padding:5px 14px;font-size:13px;font-weight:800;color:var(--teal);letter-spacing:1px;border-top:2px solid var(--border)">${letra}</td></tr>`;
+    rows+=grupos[letra].map(c=>{
+      const np=procs.filter(p=>p.clienteId===c.id).length;
+      const init=c.nome.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+      return`<tr style="cursor:pointer" onclick="abrirFicha('${c.id}')">
       <td><div style="display:flex;align-items:center;gap:10px"><div style="width:30px;height:30px;border-radius:50%;background:var(--teal-dim);display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:12px;color:var(--teal);flex-shrink:0">${init}</div><div><div style="font-weight:600">${c.nome}</div><div style="font-size:11px;color:var(--text3)">${c.tipo==='pj'?'Pessoa Jurídica':'Pessoa Física'}</div></div></div></td>
       <td style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">${c.doc||'—'}</td>
       <td style="color:var(--text2)">${c.tel||'—'}</td>
       <td><span class="tag ${np>0?'t-blue':'t-gray'}">${np} processo${np!==1?'s':''}</span></td>
       <td onclick="event.stopPropagation()"><button class="icon-btn" onclick="editarCliente('${c.id}')">✎</button><button class="icon-btn" onclick="excluirCliente('${c.id}')" style="color:var(--red)">✕</button></td>
     </tr>`;
-  }).join('');
+    }).join('');
+  });
+  tb.innerHTML=rows;
 }
 function abrirFicha(id){
   _cliAtivo=id;
@@ -2079,12 +2135,13 @@ function popularProcSelect(){
 function salvarReceita(){
   const id=v('rec-id');
   const obj={id:id||uid(),tipo:'receita',desc:v('rec-desc'),valor:parseFloat(v('rec-valor'))||0,data:v('rec-data'),cat:v('rec-cat'),status:v('rec-status'),procId:v('rec-proc-id')||undefined};
-  let list=load('financeiro'); if(id){ list=list.map(x=>x.id===id?obj:x) } else { list.unshift(obj) }
+  let list=load('financeiro');
+  if(id){ list=list.map(x=>x.id===id?obj:x) } else { list.unshift(obj) }
   save('financeiro',list);
   clr('rec-id','rec-desc','rec-valor','rec-data');
-  document.getElementById('modal-rec').classList.remove('open');
+  closeModal('modal-rec');
   toast(id?'Receita atualizada ✓':'Receita salva ✓');
-  try{ renderFinanceiro(); renderPainel(); }catch(e){}
+  try{ renderFinanceiro(); renderPainel(); }catch(e){ console.warn(e); }
 }
 function salvarDespesa(){
   const id=v('desp-id');
@@ -2111,9 +2168,9 @@ function salvarDespesa(){
   save('financeiro',list);
   clr('desp-id','desp-desc','desp-valor','desp-data');
   setV('desp-recorrencia','');
-  document.getElementById('modal-desp').classList.remove('open');
+  closeModal('modal-desp');
   toast(id?'Despesa atualizada ✓':'Despesa salva ✓');
-  try{ renderFinanceiro(); renderPainel(); }catch(e){}
+  try{ renderFinanceiro(); renderPainel(); }catch(e){ console.warn(e); }
 }
 function excluirFin(id){ if(!confirm('Excluir lançamento?')) return; save('financeiro',load('financeiro').filter(x=>x.id!==id)); renderAll(); toast('Excluído.') }
 function editarFin(id){
@@ -2193,7 +2250,7 @@ function renderAgenda(){
   let list=load('agenda').filter(a=>{
     if(!mostrarConcluidos && a.concluido) return false;
     if(filtroData && a.data!==filtroData) return false;
-    if(q && !JSON.stringify(a).toLowerCase().includes(q.toLowerCase())) return false;
+    if(q && !_match(q, a.titulo, a.tipo, a.local, a.resp, a.proc, a.obs)) return false;
     return true;
   });
   list.sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));
@@ -2210,9 +2267,13 @@ function renderAgenda(){
   tb.innerHTML=list.map(a=>`<tr style="${a.concluido?'opacity:.55':''}">
     <td style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">${fmtData(a.data)}</td>
     <td style="font-family:var(--font-mono);font-size:12px;color:var(--rose);font-weight:500">${a.hora||'—'}</td>
-    <td><strong style="${a.concluido?'text-decoration:line-through;color:var(--text3)':''}">${a.titulo||'—'}</strong>${a.concluido?'<span class="tag t-green" style="margin-left:6px;font-size:10px">✓</span>':''}</td>
+    <td>
+      <strong style="${a.concluido?'text-decoration:line-through;color:var(--text3)':''}">${a.titulo||'—'}</strong>
+      ${a.concluido?'<span class="tag t-green" style="margin-left:6px;font-size:10px">✓</span>':''}
+      ${(()=>{const _apd=a.proc?load('processos').find(x=>x.numero===a.proc||x.id===a.proc):null;return _apd?`<div style="font-size:10px;color:var(--text3);margin-top:2px">📁 ${_apd.numero||'S/N'}${_apd.parte?' · '+_apd.parte:''}</div>`:'';})()}
+    </td>
     <td><span class="tag t-blue">${a.tipo||'—'}</span></td>
-    <td style="color:var(--text2)">${a.local||'—'}</td>
+    <td style="color:var(--text2);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.local||'—'}</td>
     <td style="white-space:nowrap">
       ${!a.concluido
         ?`<button class="icon-btn" onclick="concluirAgendaPainel('${a.id}')" title="Concluir" style="color:var(--green)">✓</button>`
@@ -2270,7 +2331,7 @@ function renderPendencias(){
   const mostrarConcPend=document.getElementById('pend-mostrar-concluidas')?.checked||false;
   let list=load('pendencias').filter(p=>{
     if(!mostrarConcPend&&p.done) return false;
-    if(!JSON.stringify(p).toLowerCase().includes(q.toLowerCase())&&q) return false;
+    if(q&&!_match(q, p.desc, p.proc, p.obs, p.resp)) return false;
     if(_usuarioLogado&&!isSocio()) return !p.resp||p.resp===_usuarioLogado.id;
     return true;
   });
@@ -2294,11 +2355,13 @@ function renderPendencias(){
       const label=vencida?'Vencida':hoje?'Hoje':amanha?'Amanhã':d+' dias';
       dataBadge=`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:${bg};color:${cor};white-space:nowrap;display:flex;align-items:center;gap:3px"><span>📅</span>${fmtData(p.data)} · ${label}</span>`;
     }
+    const _ppd=p.proc?load('processos').find(x=>x.numero===p.proc||x.id===p.proc):null;
     return `<div class="pend-item${p.done?' pend-done':''}">
       <button class="pend-check${p.done?' done':''}" onclick="togglePend('${p.id}')">${p.done?'✓':''}</button>
       <div style="flex:1;min-width:0">
         <div class="pend-text${p.done?' done':''}">${p.desc||'—'}</div>
         ${dataBadge?`<div style="margin-top:4px">${dataBadge}</div>`:''}
+        ${_ppd?`<div style="font-size:10px;color:var(--text3);margin-top:3px;padding:2px 6px;background:var(--bg2);border-radius:4px;display:inline-flex;gap:3px">📁 ${_ppd.numero||'S/N'}${_ppd.parte?' · '+_ppd.parte:''}</div>`:''}
       </div>
       ${p.resp?respBadge(p.resp):''}<span class="tag ${priTagCls(p.pri)}">${{urgente:'urgente',medio:'médio',normal:'normal',baixo:'baixo'}[p.pri]||p.pri}</span>
       <button class="icon-btn" onclick="editarPend('${p.id}')">✎</button>
@@ -2595,7 +2658,7 @@ function renderPainel(){
   const pa=document.getElementById('painel-agenda'); if(pa){
     const agVisiveis=agDia.filter(a=>!a.concluido);
     if(!agVisiveis.length) pa.innerHTML=`<div class="empty" style="padding:16px 0"><div class="empty-icon">📅</div>${agDia.length&&!agVisiveis.length?'Todos os compromissos concluídos ✓':'Sem compromissos'+( agData===hoje?' hoje':' neste dia')+'.'}</div>`;
-    else pa.innerHTML=agVisiveis.sort((a,b)=>a.hora.localeCompare(b.hora)).slice(0,5).map(a=>`<div class="agenda-item" style="opacity:${a.concluido?.8:1}"><div class="agenda-time">${a.hora||'—'}</div><div class="dot" style="background:${agendaCor(a.tipo)};margin-top:6px;flex-shrink:0"></div><div style="flex:1;min-width:0"><div class="agenda-title">${a.titulo||'—'}</div><div class="agenda-sub">${a.tipo}${a.local?' · '+a.local:''}</div></div><button onclick="concluirAgendaPainel('${a.id}')" title="Concluir compromisso" style="background:none;border:1px solid var(--border2);border-radius:6px;cursor:pointer;font-size:11px;color:var(--text2);padding:3px 8px;flex-shrink:0;font-family:var(--font-body);transition:.15s" onmouseover="this.style.background='var(--green-dim)';this.style.color='var(--green)';this.style.borderColor='var(--green)'" onmouseout="this.style.background='none';this.style.color='var(--text2)';this.style.borderColor='var(--border2)'">✓ Concluir</button></div>`).join('');
+    else pa.innerHTML=agVisiveis.sort((a,b)=>a.hora.localeCompare(b.hora)).slice(0,5).map(a=>`<div class="agenda-item" style="opacity:${a.concluido?.8:1}"><div class="agenda-time">${a.hora||'—'}</div><div class="dot" style="background:${agendaCor(a.tipo)};margin-top:6px;flex-shrink:0"></div><div style="flex:1;min-width:0"><div class="agenda-title">${a.titulo||'—'}</div><div class="agenda-sub">${a.tipo}${a.local?' · '+a.local:''}${(()=>{const _ap=a.proc?load('processos').find(x=>x.numero===a.proc||x.id===a.proc):null;return _ap?` · <span style="font-size:10px;color:var(--text3)">📁 ${_ap.numero||'S/N'}</span>`:'';})()}</div></div><button onclick="concluirAgendaPainel('${a.id}')" title="Concluir compromisso" style="background:none;border:1px solid var(--border2);border-radius:6px;cursor:pointer;font-size:11px;color:var(--text2);padding:3px 8px;flex-shrink:0;font-family:var(--font-body);transition:.15s" onmouseover="this.style.background='var(--green-dim)';this.style.color='var(--green)';this.style.borderColor='var(--green)'" onmouseout="this.style.background='none';this.style.color='var(--text2)';this.style.borderColor='var(--border2)'">✓ Concluir</button></div>`).join('');
   }
   // Pendências
   const ppd=document.getElementById('painel-pend'); if(ppd){
@@ -4010,7 +4073,7 @@ function baixarModelo(id){
 
 function renderModelos(){
   const q=(document.getElementById('search-modelos')||{}).value||'';
-  const list=load('modelos').filter(m=>!q||JSON.stringify(m).toLowerCase().includes(q.toLowerCase()));
+  const list=load('modelos').filter(m=>!q||_match(q, m.nome, m.tipo, m.desc));
   const grid=document.getElementById('modelos-grid'); if(!grid) return;
   if(!list.length){
     grid.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📄</div>Nenhum modelo cadastrado.<br><button class="btn btn-main btn-sm" onclick="openModal('modal-modelo')" style="margin-top:12px">+ Criar primeiro modelo</button></div>`;
@@ -4461,6 +4524,49 @@ function toggleOrdemProcessos(){
   if(seta) seta.textContent = inv?.checked ? '↑' : '↓';
   renderProcessos();
 }
+
+function formatarNumeroCNJ(raw){
+  // Remove tudo que não é dígito
+  const d=raw.replace(/\D/g,'');
+  if(d.length===0) return raw;
+  // CNJ: 7-2-4-1-2-4 = 20 dígitos
+  // NNNNNNN-DD.AAAA.J.TT.OOOO
+  if(d.length===20){
+    return d.slice(0,7)+'-'+d.slice(7,9)+'.'+d.slice(9,13)+'.'+d.slice(13,14)+'.'+d.slice(14,16)+'.'+d.slice(16,20);
+  }
+  return raw; // não altera se não tiver 20 dígitos
+}
+
+
+function formatarTelefone(raw){
+  const d=raw.replace(/\D/g,'');
+  if(d.length===0) return '';
+  if(d.length<=2) return '('+d;
+  if(d.length<=6) return '('+d.slice(0,2)+') '+d.slice(2);
+  if(d.length<=10) return '('+d.slice(0,2)+') '+d.slice(2,6)+'-'+d.slice(6);
+  // 11 dígitos = celular com 9
+  return '('+d.slice(0,2)+') '+d.slice(2,7)+'-'+d.slice(7,11);
+}
+
+function formatarCPF(raw){
+  const d=raw.replace(/[^0-9]/g,'').slice(0,11);
+  if(d.length<=3) return d;
+  if(d.length<=6) return d.slice(0,3)+'.'+d.slice(3);
+  if(d.length<=9) return d.slice(0,3)+'.'+d.slice(3,6)+'.'+d.slice(6);
+  return d.slice(0,3)+'.'+d.slice(3,6)+'.'+d.slice(6,9)+'-'+d.slice(9,11);
+}
+
+
+// Pesquisa normalizada (ignora acentos, maiúsculas)
+function _q(val){
+  return (val||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+}
+function _match(q, ...fields){
+  if(!q) return true;
+  const nq=_q(q);
+  return fields.some(f=>_q(f).includes(nq));
+}
+
 window.addEventListener('DOMContentLoaded',()=>{
   // ── DADOS LIMPOS: remover todos os dados do localStorage (arquivo limpo) ──
   // Para resetar no futuro, descomente as 3 linhas abaixo:
