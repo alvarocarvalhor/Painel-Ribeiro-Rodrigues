@@ -1948,7 +1948,7 @@ function editarProcesso(id){
   }
   openModal('modal-proc');
 }
-function excluirProcesso(id){ if(!confirm('Excluir processo?')) return; const _item=load('processos').find(x=>x.id===id); _pushUndo('processos',_item); save('processos',load('processos').filter(x=>x.id!==id)); renderAll(); _toastUndo('Processo excluído'); }
+function excluirProcesso(id){ const _item=load('processos').find(x=>x.id===id); _pushUndo('processos',_item); save('processos',load('processos').filter(x=>x.id!==id)); renderAll(); _toastUndo('Processo excluído'); }
 function renderProcessos(){
   const q=(document.getElementById('search-proc')||{}).value||'';
   const clientes=load('clientes'), movs=load('movimentacoes'), parceiros=load('parceiros');
@@ -2028,7 +2028,7 @@ function editarPrazo(id){
   setV('prazo-id',p.id); setV('prazo-desc',p.desc); setV('prazo-data',p.data); setV('prazo-urg',p.urgencia); setV('prazo-proc',p.proc); setV('prazo-resp',p.resp||'');
   popularProcSelectGeneric('prazo-proc-sel'); openModal('modal-prazo');
 }
-function excluirPrazo(id){ if(!confirm('Excluir prazo?')) return; const _item=load('prazos').find(x=>x.id===id); _pushUndo('prazos',_item); save('prazos',load('prazos').filter(x=>x.id!==id)); renderAll(); _toastUndo('Prazo excluído') }
+function excluirPrazo(id){ const _item=load('prazos').find(x=>x.id===id); _pushUndo('prazos',_item); save('prazos',load('prazos').filter(x=>x.id!==id)); renderAll(); _toastUndo('Prazo excluído') }
 function renderPrazos(){
   const q=(document.getElementById('search-prazo')||{}).value||'';
   const mostrar=document.getElementById('prazo-mostrar-concluidos')?.checked||false;
@@ -2075,7 +2075,7 @@ function editarCliente(id){
   openModal('modal-cli');
 }
 function editarCliAtual(){ if(_cliAtivo) editarCliente(_cliAtivo) }
-function excluirCliente(id){ const c=load('clientes').find(x=>x.id===id); if(!confirm(`Excluir "${c?.nome}"?`)) return; const _cliItem=load('clientes').find(x=>x.id===id); _pushUndo('clientes',_cliItem); save('clientes',load('clientes').filter(x=>x.id!==id)); save('atendimentos',load('atendimentos').filter(a=>a.clienteId!==id)); showView('clientes'); renderAll(); toast('Cliente excluído.') }
+function excluirCliente(id){ const c=load('clientes').find(x=>x.id===id);  const _cliItem=load('clientes').find(x=>x.id===id); _pushUndo('clientes',_cliItem); save('clientes',load('clientes').filter(x=>x.id!==id)); save('atendimentos',load('atendimentos').filter(a=>a.clienteId!==id)); showView('clientes'); renderAll(); toast('Cliente excluído.') }
 function renderClientes(){
   const q=(document.getElementById('search-cli')||{}).value||'';
   let list=load('clientes').filter(c=>!q||_match(q,c.nome,c.doc,c.tel,c.email,c.obs));
@@ -2192,13 +2192,15 @@ function salvarReceita(){
   const obj={id:id||uid(),tipo:'receita',desc:v('rec-desc'),valor:parseFloat(v('rec-valor'))||0,data:v('rec-data'),cat:v('rec-cat'),status:v('rec-status'),procId:v('rec-proc-id')||undefined};
   let list=load('financeiro');
   if(id){ list=list.map(x=>x.id===id?obj:x); } else { list.unshift(obj); }
-  save('financeiro',list);
-  clr('rec-id','rec-desc','rec-valor','rec-data');
-  // Fechar diretamente sem chamar closeModal para evitar race condition com onSnapshot
+  // 1. Fechar modal ANTES do save (evita que onSnapshot re-renderize com modal aberto)
   const m=document.getElementById('modal-rec');
   if(m){ m.classList.remove('open'); window._finModalOpen=null; }
+  // 2. Flag bloqueia onSnapshot por 800ms após save local
+  window._savingFin=true;
+  save('financeiro',list);
+  clr('rec-id','rec-desc','rec-valor','rec-data');
   toast(id?'Receita atualizada ✓':'Receita salva ✓');
-  setTimeout(()=>{ try{renderFinanceiro();renderPainel();}catch(e){} },100);
+  setTimeout(()=>{ window._savingFin=false; try{renderFinanceiro();renderPainel();}catch(e){}; }, 800);
 }
 function salvarDespesa(){
   const id=v('desp-id');
@@ -2222,15 +2224,39 @@ function salvarDespesa(){
       }
     }
   }
+    const m2=document.getElementById('modal-desp');
+  if(m2){ m2.classList.remove('open'); window._finModalOpen=null; }
+  window._savingFin=true;
   save('financeiro',list);
   clr('desp-id','desp-desc','desp-valor','desp-data');
   setV('desp-recorrencia','');
-  const _md=document.getElementById('modal-desp');
-  if(_md){ _md.classList.remove('open'); window._finModalOpen=null; }
   toast(id?'Despesa atualizada ✓':'Despesa salva ✓');
-  setTimeout(()=>{ try{renderFinanceiro();renderPainel();}catch(e){} },100);
+  setTimeout(()=>{ window._savingFin=false; try{renderFinanceiro();renderPainel();}catch(e){}; }, 800);
 }
-function excluirFin(id){ if(!confirm('Excluir lançamento?')) return; save('financeiro',load('financeiro').filter(x=>x.id!==id)); renderAll(); toast('Excluído.') }
+function excluirFin(id){
+  window._lastFinItem=load('financeiro').find(x=>x.id===id);
+  window._savingFin=true;
+  save('financeiro',load('financeiro').filter(x=>x.id!==id));
+  setTimeout(()=>{ window._savingFin=false; try{renderFinanceiro();renderPainel();}catch(e){}; },800);
+  // Toast com botão desfazer
+  const tc=document.getElementById('toast-container');
+  if(tc){
+    const t=document.createElement('div');
+    t.className='toast';
+    t.style.cssText='display:flex;align-items:center;gap:10px;pointer-events:all';
+    const btn=document.createElement('button');
+    btn.textContent='Desfazer';
+    btn.style.cssText='background:rgba(255,255,255,.25);border:none;color:#fff;border-radius:4px;padding:2px 10px;cursor:pointer;font-size:11px;white-space:nowrap;font-family:inherit';
+    btn.onclick=()=>{ desfazerFinanceiro(); t.remove(); };
+    const span=document.createElement('span');
+    span.textContent='Lançamento excluído.';
+    t.appendChild(span); t.appendChild(btn);
+    tc.appendChild(t);
+    setTimeout(()=>{ if(t.parentNode) t.remove(); },5000);
+  } else {
+    toast('Lançamento excluído.');
+  }
+}
 function editarFin(id){
   const f=load('financeiro').find(x=>x.id===id); if(!f) return;
   popularProcSelect();
@@ -2290,8 +2316,8 @@ function salvarAgenda(){
   clr('agenda-id','agenda-titulo','agenda-data','agenda-hora','agenda-local'); closeModal('modal-agenda'); renderAll(); toast('Compromisso salvo ✓');
 }
 function concluirAgendaPainel(id){
-  save('agenda',load('agenda').map(a=>a.id===id?{...a,concluido:true,concluidoPor:_usuarioLogado?.nomeAbrev||'',concluidoEm:new Date().toISOString()}:a));
-  renderPainel(); renderAgenda();
+  save('agenda',load('agenda').map(a=>a.id===id?{...a,concluido:true}:a));
+  setTimeout(()=>{ try{renderPainel();renderAgenda();renderCalendario();}catch(e){}; },150);
   toast('Compromisso concluído ✓');
 }
 function reabrirAgenda(id){
@@ -2300,7 +2326,7 @@ function reabrirAgenda(id){
   toast('Compromisso reaberto.');
 }
 function editarAgenda(id){ const a=load('agenda').find(x=>x.id===id); if(!a) return; document.getElementById('modal-agenda-title').textContent='Editar Compromisso'; setV('agenda-id',a.id); setV('agenda-titulo',a.titulo); setV('agenda-data',a.data); setV('agenda-hora',a.hora); setV('agenda-tipo',a.tipo); setV('agenda-local',a.local); setV('agenda-resp',a.resp||''); setV('agenda-obs',a.obs||''); setTimeout(()=>{ criarProcSearch('agenda-proc-search','agenda-proc','Buscar...'); if(a.proc){ document.getElementById('agenda-proc').value=a.proc; const inp=document.querySelector('#agenda-proc-search .proc-search-input'); if(inp){ const pr=load('processos').find(x=>x.numero===a.proc||x.id===a.proc); const cl=pr?load('clientes').find(c=>c.id===pr.clienteId):null; inp.value=(pr?pr.numero:'')+(cl?' — '+cl.nome:''); }} },50); openModal('modal-agenda') }
-function excluirAgenda(id){ if(!confirm('Excluir?')) return; save('agenda',load('agenda').filter(x=>x.id!==id)); renderAll(); toast('Excluído.') }
+function excluirAgenda(id){ save('agenda',load('agenda').filter(x=>x.id!==id)); renderAll(); toast('Excluído.') }
 function renderAgenda(){
   const q=(document.getElementById('search-agenda')||{}).value||'';
   const filtroData=window._agendaFiltroData||null;
@@ -2378,16 +2404,11 @@ function salvarPendencia(){
   save('pendencias',list); clr('pend-id','pend-desc','pend-data','pend-obs','pend-proc'); closeModal('modal-pend'); renderAll(); toast('Pendência salva ✓');
 }
 function togglePend(id){
-  const _u=_usuarioLogado?.nomeAbrev||'';
-  const now=new Date().toISOString();
-  const list=load('pendencias').map(x=>x.id===id?{...x,done:!x.done,
-    concluidoPor:!x.done?_u:undefined,
-    concluidoEm:!x.done?now:undefined}:x);
-  save('pendencias',list);
-  renderAll();
+  save('pendencias',load('pendencias').map(x=>x.id===id?{...x,done:!x.done}:x));
+  setTimeout(()=>{ try{renderPendencias();renderPainel();renderCalendario();}catch(e){}; },150);
 }
 function editarPend(id){ const p=load('pendencias').find(x=>x.id===id); if(!p) return; document.getElementById('modal-pend-title').textContent='Editar Pendência'; setV('pend-id',p.id); setV('pend-desc',p.desc); setV('pend-pri',p.pri); setV('pend-data',p.data||''); setV('pend-resp',p.resp||''); setV('pend-obs',p.obs||''); setV('pend-resp',p.resp||''); setTimeout(()=>{ criarProcSearch('pend-proc-search','pend-proc','Buscar...'); if(p.proc){ document.getElementById('pend-proc').value=p.proc; const inp=document.querySelector('#pend-proc-search .proc-search-input'); if(inp){ const procs=load('processos'); const pr=procs.find(x=>x.numero===p.proc||x.id===p.proc); const clis=load('clientes'); const cl=pr?clis.find(c=>c.id===pr.clienteId):null; inp.value=(pr?pr.numero:'')+(cl?' — '+cl.nome:''); }} },50); openModal('modal-pend') }
-function excluirPend(id){ if(!confirm('Excluir?')) return; const _item=load('pendencias').find(x=>x.id===id); _pushUndo('pendencias',_item); save('pendencias',load('pendencias').filter(x=>x.id!==id)); renderAll(); _toastUndo('Pendência excluída') }
+function excluirPend(id){ const _item=load('pendencias').find(x=>x.id===id); _pushUndo('pendencias',_item); save('pendencias',load('pendencias').filter(x=>x.id!==id)); renderAll(); _toastUndo('Pendência excluída') }
 function renderPendencias(){
   const q=(document.getElementById('search-pend')||{}).value||'';
   const mostrarConcPend=document.getElementById('pend-mostrar-concluidas')?.checked||false;
@@ -2445,7 +2466,7 @@ function salvarNota(){
   save('notas',list); clr('nota-id','nota-titulo','nota-conteudo'); closeModal('modal-nota'); renderAll(); toast('Nota salva ✓');
 }
 function editarNota(id){ const n=load('notas').find(x=>x.id===id); if(!n) return; document.getElementById('modal-nota-title').textContent='Editar Anotação'; setV('nota-id',n.id); setV('nota-titulo',n.titulo); setV('nota-conteudo',n.conteudo); document.querySelectorAll('#nota-swatches .swatch').forEach(s=>s.classList.toggle('selected',s.dataset.cor===n.cor)); openModal('modal-nota') }
-function excluirNota(id){ if(!confirm('Excluir nota?')) return; save('notas',load('notas').filter(x=>x.id!==id)); renderAll(); toast('Nota excluída.') }
+function excluirNota(id){ save('notas',load('notas').filter(x=>x.id!==id)); renderAll(); toast('Nota excluída.') }
 function renderNotas(){
   const grid=document.getElementById('notas-grid'); if(!grid) return;
   const list=load('notas');
@@ -2844,7 +2865,7 @@ function renderCalendario(){
   // Build events map keyed by ISO date
   const events={};
   const add=(date,ev)=>{ if(!events[date]) events[date]=[]; events[date].push(ev) };
-  prazos.forEach(p=>{ if(p.data) add(p.data,{tipo:'prazo',label:`⚖ ${p.desc||'Prazo'}`,urgencia:p.urgencia}) });
+  prazos.filter(p=>!p.done).forEach(p=>{ if(p.data) add(p.data,{tipo:'prazo',label:`⚖ ${p.desc||'Prazo'}`,urgencia:p.urgencia}) });
   agenda.filter(a=>!a.concluido).forEach(a=>{ if(a.data) add(a.data,{tipo:'agenda',label:`📅 ${a.hora?a.hora+' · ':''}${a.titulo||a.tipo}${a.local?' ('+a.local+')':''}`}) });
   fin.filter(f=>f.tipo==='despesa'&&f.status==='pendente').forEach(f=>{ if(f.data) add(f.data,{tipo:'desp',label:`💸 ${f.desc||'Despesa'} — ${fmtBRL(f.valor)}`}) });
   pends.filter(p=>p.data&&!p.done).forEach(p=>{ add(p.data,{tipo:'pend',label:`✔ ${p.desc||'Pendência'}`}) });
@@ -2891,7 +2912,7 @@ function renderCalendario(){
 function calShowDetail(iso){
   const prazos=load('prazos'), agenda=load('agenda'), fin=load('financeiro'), pends=load('pendencias');
   const evs=[];
-  prazos.filter(p=>p.data===iso).forEach(p=>{ const d=diasRest(p.data); evs.push({tipo:'prazo',label:p.desc||'Prazo',sub:`Urgência: ${{critica:'Crítica',alta:'Alta',normal:'Normal'}[p.urgencia]||''} · ${d===0?'Hoje':d===1?'Amanhã':d<0?'Vencida':d+' dias'}`,cls:'t-red'}) });
+  prazos.filter(p=>p.data===iso&&!p.done).forEach(p=>{ const d=diasRest(p.data); evs.push({tipo:'prazo',label:p.desc||'Prazo',sub:`Urgência: ${{critica:'Crítica',alta:'Alta',normal:'Normal'}[p.urgencia]||''} · ${d===0?'Hoje':d===1?'Amanhã':d<0?'Vencida':d+' dias'}`,cls:'t-red'}) });
   agenda.filter(a=>a.data===iso&&!a.concluido).forEach(a=>evs.push({tipo:'agenda',label:(a.hora?a.hora+' · ':'')+( a.titulo||a.tipo),sub:a.local?`Local: ${a.local}`:'',cls:'t-blue'}));
   fin.filter(f=>f.tipo==='despesa'&&f.status==='pendente'&&f.data===iso).forEach(f=>evs.push({tipo:'desp',label:f.desc||'Despesa',sub:`A pagar: ${fmtBRL(f.valor)} · ${f.cat||''}`,cls:'t-amber'}));
   pends.filter(p=>p.data===iso&&!p.done).forEach(p=>evs.push({tipo:'pend',label:p.desc||'Pendência',sub:`Prioridade: ${{urgente:'Urgente',medio:'Médio',normal:'Normal',baixo:'Baixo'}[p.pri]||''}`,cls:'t-green'}));
@@ -3004,7 +3025,7 @@ function salvarMeta(){
   closeModal('modal-meta'); renderMetas(); toast('Meta salva ✓');
 }
 function editarMeta(id){ const m=load('metas').find(x=>x.id===id); if(!m) return; document.getElementById('modal-meta-title').textContent='Editar Meta'; setV('meta-id',m.id); setV('meta-desc',m.desc); setV('meta-tipo',m.tipo); setV('meta-valor',m.valor); setV('meta-inicio',m.inicio); setV('meta-repeticao',m.repeticao||'nao'); openModal('modal-meta') }
-function excluirMeta(id){ if(!confirm('Excluir meta?')) return; save('metas',load('metas').filter(x=>x.id!==id)); renderMetas(); toast('Meta excluída.') }
+function excluirMeta(id){ save('metas',load('metas').filter(x=>x.id!==id)); renderMetas(); toast('Meta excluída.') }
 
 function renderMetas(){
   const metas=load('metas');
@@ -3116,7 +3137,7 @@ function salvarParceiro(){
   closeModal('modal-parceiro'); renderAll(); toast('Parceiro salvo ✓');
 }
 function editarParceiro(id){ const p=load('parceiros').find(x=>x.id===id); if(!p) return; document.getElementById('modal-parceiro-title').textContent='Editar Parceiro'; setV('parceiro-id',p.id); setV('parceiro-nome',p.nome); setV('parceiro-tel',p.tel); setV('parceiro-email',p.email); setV('parceiro-tipo',p.tipo); setV('parceiro-obs',p.obs); openModal('modal-parceiro') }
-function excluirParceiro(id){ if(!confirm('Excluir parceiro?')) return; save('parceiros',load('parceiros').filter(x=>x.id!==id)); renderAll(); toast('Parceiro excluído.') }
+function excluirParceiro(id){ save('parceiros',load('parceiros').filter(x=>x.id!==id)); renderAll(); toast('Parceiro excluído.') }
 
 function marcarIndicacaoPaga(procId){
   const list=load('processos').map(p=>p.id===procId&&p.indicacao?{...p,indicacao:{...p.indicacao,status:'pago'}}:p);
@@ -4367,7 +4388,7 @@ function iniciarSyncFirebase() {
             } else {
               localStorage.setItem(KEYS[k]||k, JSON.stringify(remote.data));
             }
-            if (!window._renderAllRunning && !window._modalClosing) {
+            if (!window._renderAllRunning && !window._modalClosing && !window._savingFin) {
               try { renderAll(); } catch(e) {}
             }
           }
@@ -4584,12 +4605,9 @@ async function salvarCredencialFirestore(uid, campos){
 }
 
 function togglePrazo(id){
-  const _u=_usuarioLogado?.nomeAbrev||'';
-  const list=load('prazos').map(x=>x.id===id?{...x,done:!x.done,
-    concluidoPor:!x.done?_u:undefined,
-    concluidoEm:!x.done?new Date().toISOString():undefined}:x);
+  const list=load('prazos').map(x=>x.id===id?{...x,done:!x.done}:x);
   save('prazos',list);
-  setTimeout(()=>{try{renderPrazos();renderPainel();}catch(e){}},150);
+  setTimeout(()=>{ try{renderPrazos();renderPainel();renderCalendario();}catch(e){}; },150);
 }
 
 function toggleNumProc2(){
@@ -4811,6 +4829,17 @@ function selecionarCliSearch(wrapId,hiddenId,id,nome){
 
 
 
+
+
+function desfazerFinanceiro(){
+  if(!window._lastFinItem) return;
+  const list=load('financeiro');
+  list.unshift(window._lastFinItem);
+  window._lastFinItem=null;
+  save('financeiro',list);
+  setTimeout(()=>{ try{renderFinanceiro();renderPainel();}catch(e){}; },100);
+  toast('↩ Desfeito');
+}
 
 window.addEventListener('DOMContentLoaded',()=>{
   // ── DADOS LIMPOS: remover todos os dados do localStorage (arquivo limpo) ──
