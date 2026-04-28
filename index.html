@@ -1797,6 +1797,7 @@ function openModal(id){
   ['prazo-data','rec-data','desp-data','agenda-data','atend-data','mov-data'].forEach(f=>{ const fe=document.getElementById(f); if(fe&&!fe.value) fe.value=td });
   if(id==='modal-proc'){ criarCliSearch('proc-cli-search','proc-cli-id'); popularParceiroSelect('proc-parceiro-id'); }
   if(id==='modal-rec'||id==='modal-desp'){
+    if(window._savingFin) return; // não reabrir durante save
     popularProcSelect();
     window._finModalOpen = id;
   }
@@ -1810,7 +1811,7 @@ function closeModal(id){
   el.classList.remove('open');
   if(id===window._finModalOpen) window._finModalOpen=null;
   window._modalClosing=true;
-  setTimeout(()=>{ window._modalClosing=false; }, 450);
+  setTimeout(()=>{ window._modalClosing=false; }, 3000);
   ['modal-proc-title','modal-prazo-title','modal-cli-title','modal-atend-title','modal-rec-title','modal-desp-title','modal-agenda-title','modal-pend-title','modal-nota-title','modal-mov-title'].forEach(tid=>{ const titleEl=document.getElementById(tid); if(titleEl&&id===titleEl.closest('.modal-overlay')?.id) titleEl.textContent=titleEl.textContent.replace('Editar ','Novo ').replace('Editar ','Nova ') });
 }
 document.querySelectorAll('.modal-overlay').forEach(o=>{
@@ -2189,18 +2190,26 @@ function popularProcSelect(){
 }
 function salvarReceita(){
   const id=v('rec-id');
-  const obj={id:id||uid(),tipo:'receita',desc:v('rec-desc'),valor:parseFloat(v('rec-valor'))||0,data:v('rec-data'),cat:v('rec-cat'),status:v('rec-status'),procId:v('rec-proc-id')||undefined};
+  if(!v('rec-desc')&&!v('rec-valor')){ closeModal('modal-rec'); return; }
+  const obj={id:id||uid(),tipo:'receita',desc:v('rec-desc')||'Receita',valor:parseFloat(v('rec-valor'))||0,data:v('rec-data'),cat:v('rec-cat'),status:v('rec-status'),procId:v('rec-proc-id')||undefined};
   let list=load('financeiro');
   if(id){ list=list.map(x=>x.id===id?obj:x); } else { list.unshift(obj); }
-  // 1. Fechar modal ANTES do save (evita que onSnapshot re-renderize com modal aberto)
-  const m=document.getElementById('modal-rec');
-  if(m){ m.classList.remove('open'); window._finModalOpen=null; }
-  // 2. Flag bloqueia onSnapshot por 800ms após save local
+  // Fechar modal imediatamente e de forma definitiva
   window._savingFin=true;
+  window._modalClosing=true;
+  const m=document.getElementById('modal-rec');
+  if(m) m.classList.remove('open');
+  window._finModalOpen=null;
+  // Salvar
   save('financeiro',list);
   clr('rec-id','rec-desc','rec-valor','rec-data');
   toast(id?'Receita atualizada ✓':'Receita salva ✓');
-  setTimeout(()=>{ window._savingFin=false; try{renderFinanceiro();renderPainel();}catch(e){}; }, 800);
+  // Manter flags por 3s para cobrir confirmação do Firestore
+  setTimeout(()=>{
+    window._savingFin=false;
+    window._modalClosing=false;
+    try{renderFinanceiro();renderPainel();}catch(e){};
+  }, 3000);
 }
 function salvarDespesa(){
   const id=v('desp-id');
@@ -2224,14 +2233,22 @@ function salvarDespesa(){
       }
     }
   }
-    const m2=document.getElementById('modal-desp');
-  if(m2){ m2.classList.remove('open'); window._finModalOpen=null; }
+    // Fechar modal imediatamente e de forma definitiva
   window._savingFin=true;
+  window._modalClosing=true;
+  const m2=document.getElementById('modal-desp');
+  if(m2) m2.classList.remove('open');
+  window._finModalOpen=null;
   save('financeiro',list);
   clr('desp-id','desp-desc','desp-valor','desp-data');
   setV('desp-recorrencia','');
   toast(id?'Despesa atualizada ✓':'Despesa salva ✓');
-  setTimeout(()=>{ window._savingFin=false; try{renderFinanceiro();renderPainel();}catch(e){}; }, 800);
+  // Manter flags por 3s para cobrir confirmação do Firestore
+  setTimeout(()=>{
+    window._savingFin=false;
+    window._modalClosing=false;
+    try{renderFinanceiro();renderPainel();}catch(e){};
+  }, 3000);
 }
 function excluirFin(id){
   window._lastFinItem=load('financeiro').find(x=>x.id===id);
